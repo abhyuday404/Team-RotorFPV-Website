@@ -1,4 +1,5 @@
 import React from 'react';
+import Typewriter from 'typewriter-effect';
 import './Home.css';
 
 const Home = () => {
@@ -14,13 +15,28 @@ const Home = () => {
       
       <div className="hero-content">
         <h1 className="brand-font hero-quote">
-          <span className="word">Build</span>
-          <span className="dot">.</span>
-          <span className="word">Fly</span>
-          <span className="dot">.</span>
-          <span className="word">Crash</span>
-          <span className="dot">.</span>
-          <span className="word highlight">Repeat</span>
+          <Typewriter
+            options={{
+              delay: 80,
+            }}
+            onInit={(typewriter) => {
+              typewriter
+                .typeString('<span class="word">Build</span> ')
+                .pauseFor(300)
+                .typeString('<span class="dot">.</span> ')
+                .pauseFor(300)
+                .typeString('<span class="word">Fly</span> ')
+                .pauseFor(300)
+                .typeString('<span class="dot">.</span> ')
+                .pauseFor(300)
+                .typeString('<span class="word">Crash</span> ')
+                .pauseFor(300)
+                .typeString('<span class="dot">.</span> ')
+                .pauseFor(500)
+                .typeString('<span class="word highlight">Repeat</span>')
+                .start();
+            }}
+          />
         </h1>
       </div>
     </div>

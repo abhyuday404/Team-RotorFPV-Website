@@ -5,7 +5,7 @@
   transform: translateX(-50%);
   width: 80%; /* Shrunk horizontally */
   max-width: 950px;
-  height: 85px; /* Lengthier vertically */
+  height: 90px; /* Thicker to perfectly contain the larger logo */
   border-radius: 50px;
   z-index: 1000;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
@@ -27,8 +27,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 1rem;
+  margin: 0 1.5rem;
   transition: transform 0.3s ease;
+  background: transparent;
 }
 
 .nav-logo:hover {
@@ -36,8 +37,9 @@
 }
 
 .logo-img {
-  height: 75px; /* Logo slightly overlapping the navbar */
-  width: auto;
+  height: 85px; /* Large, but beautifully contained inside the 90px navbar */
+  width: 85px; 
+  border-radius: 50%; /* Ensures it curves perfectly with the navbar aesthetic */
   object-fit: contain;
 }
 

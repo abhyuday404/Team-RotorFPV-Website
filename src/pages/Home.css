@@ -42,40 +42,25 @@
 }
 
 .hero-quote {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 4rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 1rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 2.5rem; /* Reduced from 4rem */
+  font-weight: 200; /* Extremely thin/sleek */
+  text-align: center;
   text-transform: uppercase;
-}
-
-.hero-quote .word {
-  opacity: 0;
-  animation: slideUp 0.8s ease forwards;
+  margin: 0;
 }
 
 .hero-quote .dot {
   color: var(--accent);
-  opacity: 0;
-  animation: fadeIn 0.5s ease forwards;
 }
 
-/* Staggered animations */
-.hero-quote span:nth-child(1) { animation-delay: 0.2s; }
-.hero-quote span:nth-child(2) { animation-delay: 0.6s; }
-.hero-quote span:nth-child(3) { animation-delay: 1.0s; }
-.hero-quote span:nth-child(4) { animation-delay: 1.4s; }
-.hero-quote span:nth-child(5) { animation-delay: 1.8s; }
-.hero-quote span:nth-child(6) { animation-delay: 2.2s; }
-.hero-quote span:nth-child(7) { animation-delay: 2.6s; }
-
 .hero-quote .highlight {
-  color: var(--accent);
-  text-shadow: 0 0 20px rgba(100, 255, 218, 0.4);
+  color: var(--accent-blue);
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+}
+
+.Typewriter__cursor {
+  color: var(--accent-blue);
 }
 
 @keyframes slideUp {
