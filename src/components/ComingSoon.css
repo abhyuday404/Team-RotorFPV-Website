@@ -1,0 +1,57 @@
+.coming-soon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 2rem;
+}
+
+.coming-soon-content {
+  padding: 4rem;
+  border-radius: 16px;
+  text-align: center;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 30px -10px rgba(2,12,27,0.7);
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.coming-soon-content h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.coming-soon-content p {
+  font-size: 1.2rem;
+  color: var(--accent);
+  margin-bottom: 2rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.loader {
+  width: 50px;
+  height: 50px;
+  border: 3px solid var(--text-secondary);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin: 0 auto;
+  animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
