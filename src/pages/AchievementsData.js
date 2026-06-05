@@ -82,5 +82,26 @@ export const achievementsData = [
     title: "Cognizance (Sky Maneuver) IITR",
     description: "Winning 3rd place at IIT Roorkee Tech Fest (Cognizance) Sky Maneuver Competition.",
     images: ["https://images.unsplash.com/photo-1563804863336-7ce21c238bd7?auto=format&fit=crop&q=80&w=800", "https://images.unsplash.com/photo-1574169208507-84376144848b?auto=format&fit=crop&q=80&w=800"]
+  },
+  {
+    id: 13,
+    year: "2026",
+    title: "ISDC 26",
+    description: "Participated and excelled at the International Space Drone Challenge 2026.",
+    images: ["https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&q=80&w=800", "https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&q=80&w=800"]
+  },
+  {
+    id: 14,
+    year: "2026",
+    title: "IIT Roorkee Tech Fest Cognizance",
+    description: "Secured top position in drone events at IIT Roorkee's Tech Fest Cognizance.",
+    images: ["https://images.unsplash.com/photo-1563804863336-7ce21c238bd7?auto=format&fit=crop&q=80&w=800", "https://images.unsplash.com/photo-1574169208507-84376144848b?auto=format&fit=crop&q=80&w=800"]
+  },
+  {
+    id: 15,
+    year: "2026",
+    title: "Sky Maneuver Competition",
+    description: "Achieved 3rd place in the highly competitive Sky Maneuver Competition.",
+    images: ["https://images.unsplash.com/photo-1473968512647-3e447244af8f?auto=format&fit=crop&q=80&w=800", "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?auto=format&fit=crop&q=80&w=800"]
   }
 ];

@@ -7,13 +7,13 @@ const Navbar = () => {
 
   const leftLinks = [
     { name: 'Gallery', path: '/gallery' },
-    { name: 'Team', path: '/team' },
+    { name: 'Sponsors', path: '/sponsors' },
     { name: 'Drones', path: '/drones' },
   ];
 
   const rightLinks = [
     { name: 'Achievements', path: '/achievements' },
-    { name: 'Sponsors', path: '/sponsors' },
+    { name: 'Team', path: '/team' },
     { name: 'About Us', path: '/about' },
   ];
 
