@@ -1,0 +1,155 @@
+/* ═══════════════════════════════════════════════
+   InfiniteMenu — 3D Sphere Globe
+   Adapted for Team Rotor FPV dark theme
+   ═══════════════════════════════════════════════ */
+
+#infinite-grid-menu-canvas {
+  cursor: grab;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  outline: none;
+}
+
+#infinite-grid-menu-canvas:active {
+  cursor: grabbing;
+}
+
+/* ─── Floating Action Button ─── */
+.action-button {
+  position: absolute;
+  left: 50%;
+  z-index: 10;
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 4px solid #0A192F;
+  box-shadow: 0 4px 24px rgba(0, 242, 254, 0.35);
+  transition: box-shadow 0.3s ease;
+}
+
+.action-button:hover {
+  box-shadow: 0 6px 32px rgba(0, 242, 254, 0.5);
+}
+
+.action-button-icon {
+  user-select: none;
+  position: relative;
+  color: #0A192F;
+  top: 2px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+/* ─── Title Overlay — bottom left ─── */
+.face-title {
+  user-select: none;
+  position: absolute;
+  font-weight: 800;
+  font-size: 2rem;
+  font-family: 'Outfit', sans-serif;
+  color: #ffffff;
+  left: 2.5rem;
+  bottom: 5rem;
+  transform: translateY(20px);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+  line-height: 1.2;
+  max-width: 40%;
+}
+
+.face-title.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: 0.5s ease;
+}
+
+.face-title.inactive {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: 0.15s ease;
+}
+
+/* ─── Description Overlay — bottom right ─── */
+.face-description {
+  user-select: none;
+  position: absolute;
+  max-width: 22ch;
+  bottom: 5rem;
+  right: 2.5rem;
+  font-size: 1.05rem;
+  font-family: 'Inter', sans-serif;
+  color: #8892B0;
+  text-align: right;
+  line-height: 1.6;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+  transform: translateY(20px);
+}
+
+.face-description.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: 0.5s ease;
+}
+
+.face-description.inactive {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: 0.15s ease;
+}
+
+/* ─── Action Button States ─── */
+.action-button.active {
+  bottom: 3.8em;
+  transform: translateX(-50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+  transition: 0.5s ease;
+}
+
+.action-button.inactive {
+  bottom: -80px;
+  transform: translateX(-50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.1s ease;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .face-title {
+    font-size: 1.5rem;
+    left: 1.5rem;
+    bottom: 4rem;
+    max-width: 50%;
+  }
+
+  .face-description {
+    font-size: 0.9rem;
+    right: 1.5rem;
+    bottom: 4rem;
+    max-width: 18ch;
+  }
+}
+
+@media (max-width: 600px) {
+  .face-title {
+    font-size: 1.3rem;
+    left: 1rem;
+    bottom: 3rem;
+    max-width: 55%;
+  }
+
+  .face-description {
+    display: none;
+  }
+}

@@ -19,7 +19,7 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: var(--bg-primary);
+  background-color: transparent;
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;
@@ -62,4 +62,14 @@ main {
   margin: 0 auto;
   padding: 0 2rem;
   width: 100%;
+}
+
+.app-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background-color: var(--bg-primary);
 }

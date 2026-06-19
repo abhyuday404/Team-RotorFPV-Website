@@ -109,11 +109,11 @@ const Navbar = () => {
               width="100%"
               height="100%"
               borderRadius={20}
-              brightness={55}
-              opacity={0.9}
-              blur={8}
-              backgroundOpacity={0.12}
-              saturation={1.4}
+              brightness={65}
+              opacity={0.95}
+              blur={20}
+              backgroundOpacity={0.25}
+              saturation={1.6}
               className="nav-pill-glass"
             />
           </div>

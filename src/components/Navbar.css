@@ -15,7 +15,7 @@
   /* Ensure GlassSurface fills the navbar shell completely */
   width: 100% !important;
   height: 100% !important;
-  background: rgba(120, 180, 255, 0.08) !important;
+  background: rgba(50, 142, 255, 0.26) !important;
 }
 
 .navbar-glass .glass-surface__content {
@@ -52,10 +52,11 @@
 .nav-pill-glass {
   width: 100% !important;
   height: 100% !important;
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
   box-shadow:
-    0 0 8px 1px rgba(255, 255, 255, 0.06) inset,
-    0 0 1px 0.5px rgba(255, 255, 255, 0.12) inset !important;
+    0 0 12px 2px rgba(255, 255, 255, 0.1) inset,
+    0 0 2px 1px rgba(255, 255, 255, 0.25) inset,
+    0 4px 12px 0 rgba(255, 255, 255, 0) !important;
 }
 
 /* ── Logo ── */
