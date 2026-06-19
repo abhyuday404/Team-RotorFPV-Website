@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Achievements from './pages/Achievements';
 import Admin from './pages/Admin';
+import Gallery from './pages/Gallery';
 import Silk from './components/Silk';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/gallery" element={<Gallery />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>

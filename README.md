@@ -17,29 +17,9 @@ Welcome to the codebase for the official Team Rotor FPV website! This project fe
 
 ## 💻 How to Run Locally
 
-Because this project uses a separate frontend and backend for security, you need to run **two** terminals side-by-side.
-
-### 1. Start the Backend Server (Terminal 1)
-The backend acts as the secure bouncer that grants admin privileges using the secret Service Account Key.
+To start the frontend locally:
 
 ```bash
-# Navigate to the server folder
-cd server
-
-# Install the server dependencies (only needed the first time)
-npm install
-
-# Start the Node.js server
-npm run dev
-```
-*(The server will start running at `http://localhost:3000`)*
-
-### 2. Start the React Frontend (Terminal 2)
-This is the beautiful user-facing website.
-
-```bash
-# Open a new terminal in the main project folder (Team-RotorFPV-Website)
-
 # Install the frontend dependencies (only needed the first time)
 npm install
 

@@ -12,6 +12,8 @@ const Admin = () => {
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const galleryFileInputRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('achievements');
   
   // List of current admins fetched from our backend
   const [adminList, setAdminList] = useState([]);
@@ -22,6 +24,14 @@ const Admin = () => {
     year: '',
     description: '',
     imageUrl: '',
+    order: 0
+  });
+
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [editingGalleryId, setEditingGalleryId] = useState(null);
+  const [galleryFormData, setGalleryFormData] = useState({
+    imgUrl: '',
+    height: 400,
     order: 0
   });
 
@@ -44,20 +54,33 @@ const Admin = () => {
         });
 
         if (isAdmin) {
+          const unsubscribes = [];
+          
           // Fetch achievements only if they are an admin
-          const q = query(collection(db, 'achievements'), orderBy('order', 'desc'));
-          const unsubscribeDb = onSnapshot(q, (snapshot) => {
+          const qAchievements = query(collection(db, 'achievements'), orderBy('order', 'desc'));
+          unsubscribes.push(onSnapshot(qAchievements, (snapshot) => {
             const data = snapshot.docs.map(doc => ({
               id: doc.id,
               ...doc.data()
             }));
             setAchievements(data);
             setLoading(false);
-          });
+          }));
+
+          const qGallery = query(collection(db, 'gallery'), orderBy('order', 'desc'));
+          unsubscribes.push(onSnapshot(qGallery, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            setGalleryItems(data);
+          }));
           
           fetchAdminsList(currentUser);
 
-          return () => unsubscribeDb();
+          return () => {
+            unsubscribes.forEach(unsub => unsub());
+          };
         } else {
           setLoading(false);
         }
@@ -200,6 +223,124 @@ const Admin = () => {
     }
   };
 
+  const getImageDimensions = (url) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.width, height: img.height });
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  };
+
+  const handleGalleryInputChange = (e) => {
+    const { name, value } = e.target;
+    setGalleryFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGalleryImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", "bjas0f0d");
+    data.append("cloud_name", "dipl119bu");
+
+    try {
+      const response = await fetch("https://api.cloudinary.com/v1_1/dipl119bu/image/upload", {
+        method: "POST",
+        body: data,
+      });
+      const uploadedImage = await response.json();
+      if (uploadedImage.secure_url) {
+        setGalleryFormData(prev => ({ 
+          ...prev, 
+          imgUrl: uploadedImage.secure_url,
+          originalWidth: uploadedImage.width,
+          originalHeight: uploadedImage.height
+        }));
+      } else {
+        alert("Upload failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Error uploading image.");
+    } finally {
+      setIsUploading(false);
+      if (galleryFileInputRef.current) {
+        galleryFileInputRef.current.value = ''; // Reset input
+      }
+    }
+  };
+
+  const resetGalleryForm = () => {
+    setGalleryFormData({ imgUrl: '', order: 0, originalWidth: null, originalHeight: null });
+    setEditingGalleryId(null);
+  };
+
+  const handleGalleryEdit = (item) => {
+    setEditingGalleryId(item.id);
+    setGalleryFormData({
+      imgUrl: item.img || '',
+      order: item.order || 0,
+      originalWidth: item.originalWidth || null,
+      originalHeight: item.originalHeight || null
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleGalleryDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this gallery image?")) {
+      try {
+        await deleteDoc(doc(db, 'gallery', id));
+      } catch (error) {
+        console.error("Delete Error:", error);
+        alert("Failed to delete. You might not have permission.");
+      }
+    }
+  };
+
+  const handleGallerySubmit = async (e) => {
+    e.preventDefault();
+    if (!galleryFormData.imgUrl) {
+      alert("Please provide an image URL or upload an image.");
+      return;
+    }
+    
+    // Auto-detect dimensions if not already fetched
+    let width = galleryFormData.originalWidth;
+    let height = galleryFormData.originalHeight;
+    
+    if (!width || !height) {
+        const dims = await getImageDimensions(galleryFormData.imgUrl);
+        if (dims) {
+            width = dims.width;
+            height = dims.height;
+        }
+    }
+
+    const dataToSave = {
+      img: galleryFormData.imgUrl,
+      order: Number(galleryFormData.order),
+      originalWidth: width || 600,
+      originalHeight: height || 400,
+      url: "" 
+    };
+
+    try {
+      if (editingGalleryId) {
+        await updateDoc(doc(db, 'gallery', editingGalleryId), dataToSave);
+      } else {
+        await addDoc(collection(db, 'gallery'), dataToSave);
+      }
+      resetGalleryForm();
+    } catch (error) {
+      console.error("Save Error:", error);
+      alert("Failed to save gallery image. You might not have permission.");
+    }
+  };
+
   const handleAddAdmin = async (e) => {
     e.preventDefault();
     if (!newAdminEmail) return;
@@ -306,125 +447,237 @@ const Admin = () => {
         </div>
       </div>
 
+      <div className="admin-tabs">
+        <button 
+          className={`admin-tab ${activeTab === 'achievements' ? 'active' : ''}`}
+          onClick={() => setActiveTab('achievements')}
+        >
+          Achievements
+        </button>
+        <button 
+          className={`admin-tab ${activeTab === 'gallery' ? 'active' : ''}`}
+          onClick={() => setActiveTab('gallery')}
+        >
+          Gallery
+        </button>
+        <button 
+          className={`admin-tab ${activeTab === 'admins' ? 'active' : ''}`}
+          onClick={() => setActiveTab('admins')}
+        >
+          Manage Admins
+        </button>
+      </div>
+
       <div className="admin-content">
-        <div className="admin-glass-panel form-panel">
-          <h2>{editingId ? 'Edit Achievement' : 'Add New Achievement'}</h2>
-          <form onSubmit={handleSubmit} className="admin-form">
-            
-            <div className="form-group">
-              <label>Title</label>
-              <input 
-                type="text" 
-                name="title" 
-                value={formData.title} 
-                onChange={handleInputChange} 
-                required 
-                placeholder="e.g. Aerothon 2024"
-              />
+        {activeTab === 'achievements' && (
+          <>
+            <div className="admin-glass-panel form-panel">
+              <h2>{editingId ? 'Edit Achievement' : 'Add New Achievement'}</h2>
+              <form onSubmit={handleSubmit} className="admin-form">
+                
+                <div className="form-group">
+                  <label>Title</label>
+                  <input 
+                    type="text" 
+                    name="title" 
+                    value={formData.title} 
+                    onChange={handleInputChange} 
+                    required 
+                    placeholder="e.g. Aerothon 2024"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Year</label>
+                  <input 
+                    type="text" 
+                    name="year" 
+                    value={formData.year} 
+                    onChange={handleInputChange} 
+                    required 
+                    placeholder="e.g. 2024"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Order (Higher numbers appear first)</label>
+                  <input 
+                    type="number" 
+                    name="order" 
+                    value={formData.order} 
+                    onChange={handleInputChange} 
+                    required 
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Image (Optional)</label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      ref={fileInputRef}
+                      onChange={handleImageUpload} 
+                      disabled={isUploading}
+                      style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}
+                    />
+                    {isUploading && <span style={{ color: '#00fff5', fontSize: '0.9rem' }}>Uploading...</span>}
+                  </div>
+                  <input 
+                    type="text" 
+                    name="imageUrl" 
+                    value={formData.imageUrl} 
+                    onChange={handleInputChange} 
+                    placeholder="Or paste an image URL directly here..."
+                  />
+                  {formData.imageUrl && (
+                    <div style={{ marginTop: '10px', border: '1px solid rgba(255,255,255,0.1)', padding: '5px', borderRadius: '5px', display: 'inline-block' }}>
+                      <img src={formData.imageUrl} alt="Preview" style={{ height: '80px', borderRadius: '4px', objectFit: 'cover' }} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label>Description</label>
+                  <textarea 
+                    name="description" 
+                    value={formData.description} 
+                    onChange={handleInputChange} 
+                    required 
+                    rows="4"
+                    placeholder="Detailed description of the achievement..."
+                  ></textarea>
+                </div>
+
+                <div className="form-actions">
+                  {editingId && (
+                    <button type="button" onClick={resetForm} className="admin-btn cancel">
+                      Cancel Edit
+                    </button>
+                  )}
+                  <button type="submit" className="admin-btn primary">
+                    {editingId ? 'Update Achievement' : 'Add Achievement'}
+                  </button>
+                </div>
+              </form>
             </div>
 
-            <div className="form-group">
-              <label>Year</label>
-              <input 
-                type="text" 
-                name="year" 
-                value={formData.year} 
-                onChange={handleInputChange} 
-                required 
-                placeholder="e.g. 2024"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Order (Higher numbers appear first)</label>
-              <input 
-                type="number" 
-                name="order" 
-                value={formData.order} 
-                onChange={handleInputChange} 
-                required 
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Image (Optional)</label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  ref={fileInputRef}
-                  onChange={handleImageUpload} 
-                  disabled={isUploading}
-                  style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}
-                />
-                {isUploading && <span style={{ color: '#00fff5', fontSize: '0.9rem' }}>Uploading...</span>}
+            <div className="admin-right-column">
+              <div className="admin-glass-panel list-panel" style={{ marginBottom: '30px', height: '100%' }}>
+                <h2>Current Achievements</h2>
+                <div className="achievements-list">
+                  {achievements.map((item) => (
+                    <div key={item.id} className="admin-achievement-card">
+                      <div className="card-info">
+                        <h3>{item.title} <span>({item.year})</span></h3>
+                        <p className="order-badge">Order: {item.order}</p>
+                        <p className="card-desc">{item.description}</p>
+                      </div>
+                      <div className="card-actions">
+                        <button onClick={() => handleEdit(item)} className="admin-btn edit">Edit</button>
+                        <button onClick={() => handleDelete(item.id)} className="admin-btn delete">Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                  {achievements.length === 0 && <p>No achievements found.</p>}
+                </div>
               </div>
-              <input 
-                type="text" 
-                name="imageUrl" 
-                value={formData.imageUrl} 
-                onChange={handleInputChange} 
-                placeholder="Or paste an image URL directly here..."
-              />
-              {formData.imageUrl && (
-                <div style={{ marginTop: '10px', border: '1px solid rgba(255,255,255,0.1)', padding: '5px', borderRadius: '5px', display: 'inline-block' }}>
-                  <img src={formData.imageUrl} alt="Preview" style={{ height: '80px', borderRadius: '4px', objectFit: 'cover' }} />
+            </div>
+          </>
+        )}
+
+        {activeTab === 'gallery' && (
+          <>
+            <div className="admin-glass-panel form-panel">
+              <h2>{editingGalleryId ? 'Edit Gallery Image' : 'Add New Gallery Image'}</h2>
+              <form onSubmit={handleGallerySubmit} className="admin-form">
+                
+                <div className="form-group">
+                  <label>Order (Higher numbers appear first)</label>
+                  <input 
+                    type="number" 
+                    name="order" 
+                    value={galleryFormData.order} 
+                    onChange={handleGalleryInputChange} 
+                    required 
+                  />
                 </div>
-              )}
-            </div>
 
-            <div className="form-group">
-              <label>Description</label>
-              <textarea 
-                name="description" 
-                value={formData.description} 
-                onChange={handleInputChange} 
-                required 
-                rows="4"
-                placeholder="Detailed description of the achievement..."
-              ></textarea>
-            </div>
-
-            <div className="form-actions">
-              {editingId && (
-                <button type="button" onClick={resetForm} className="admin-btn cancel">
-                  Cancel Edit
-                </button>
-              )}
-              <button type="submit" className="admin-btn primary">
-                {editingId ? 'Update Achievement' : 'Add Achievement'}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div className="admin-right-column">
-          <div className="admin-glass-panel list-panel" style={{ marginBottom: '30px' }}>
-            <h2>Current Achievements</h2>
-            <div className="achievements-list">
-              {achievements.map((item) => (
-                <div key={item.id} className="admin-achievement-card">
-                  <div className="card-info">
-                    <h3>{item.title} <span>({item.year})</span></h3>
-                    <p className="order-badge">Order: {item.order}</p>
-                    <p className="card-desc">{item.description}</p>
+                <div className="form-group">
+                  <label>Image</label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      ref={galleryFileInputRef}
+                      onChange={handleGalleryImageUpload} 
+                      disabled={isUploading}
+                      style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}
+                    />
+                    {isUploading && <span style={{ color: '#00fff5', fontSize: '0.9rem' }}>Uploading...</span>}
                   </div>
-                  <div className="card-actions">
-                    <button onClick={() => handleEdit(item)} className="admin-btn edit">Edit</button>
-                    <button onClick={() => handleDelete(item.id)} className="admin-btn delete">Delete</button>
-                  </div>
+                  <input 
+                    type="text" 
+                    name="imgUrl" 
+                    value={galleryFormData.imgUrl} 
+                    onChange={handleGalleryInputChange} 
+                    placeholder="Or paste an image URL directly here..."
+                  />
+                  {galleryFormData.imgUrl && (
+                    <div style={{ marginTop: '10px', border: '1px solid rgba(255,255,255,0.1)', padding: '5px', borderRadius: '5px', display: 'inline-block' }}>
+                      <img src={galleryFormData.imgUrl} alt="Preview" style={{ height: '120px', borderRadius: '4px', objectFit: 'cover' }} />
+                    </div>
+                  )}
                 </div>
-              ))}
-              {achievements.length === 0 && <p>No achievements found.</p>}
-            </div>
-          </div>
 
-          <div className="admin-glass-panel admin-management-panel">
+                <div className="form-actions">
+                  {editingGalleryId && (
+                    <button type="button" onClick={resetGalleryForm} className="admin-btn cancel">
+                      Cancel Edit
+                    </button>
+                  )}
+                  <button type="submit" className="admin-btn primary">
+                    {editingGalleryId ? 'Update Image' : 'Add Image'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div className="admin-right-column">
+              <div className="admin-glass-panel list-panel" style={{ marginBottom: '30px', height: '100%' }}>
+                <h2>Current Gallery</h2>
+                <div className="achievements-list">
+                  {galleryItems.map((item) => (
+                    <div key={item.id} className="admin-achievement-card" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <img src={item.img} alt="Gallery" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} />
+                      <div className="card-info" style={{ flex: 1, marginLeft: '15px' }}>
+                        <p className="order-badge">Order: {item.order}</p>
+                        {item.originalWidth && item.originalHeight ? (
+                           <p className="card-desc">Dims: {item.originalWidth}x{item.originalHeight}</p>
+                        ) : (
+                           <p className="card-desc">Legacy Height: {item.height}px</p>
+                        )}
+                      </div>
+                      <div className="card-actions" style={{ flexDirection: 'column', marginTop: 0 }}>
+                        <button onClick={() => handleGalleryEdit(item)} className="admin-btn edit">Edit</button>
+                        <button onClick={() => handleGalleryDelete(item.id)} className="admin-btn delete">Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                  {galleryItems.length === 0 && <p>No gallery images found.</p>}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'admins' && (
+          <div className="admin-glass-panel admin-management-panel" style={{ gridColumn: '1 / -1' }}>
             <h2>Manage Admins</h2>
-            <p style={{fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginBottom: '15px'}}>
+            <p style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', marginBottom: '20px'}}>
               User must sign in to the website at least once before they can be granted admin privileges.
             </p>
-            <form onSubmit={handleAddAdmin} className="admin-form" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <form onSubmit={handleAddAdmin} className="admin-form" style={{ display: 'flex', gap: '15px', marginBottom: '30px', maxWidth: '500px' }}>
               <input 
                 type="email" 
                 value={newAdminEmail} 
@@ -436,21 +689,23 @@ const Admin = () => {
               <button type="submit" className="admin-btn primary" style={{ flex: 'none' }}>Grant Access</button>
             </form>
             
-            <div className="admin-users-list">
+            <div className="admin-users-list" style={{ maxWidth: '800px' }}>
               {adminList.map(email => (
                 <div key={email} className="admin-user-item">
-                  <span>{email}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span>{email}</span>
+                    {email === user.email && (
+                      <span className="you-badge">You</span>
+                    )}
+                  </div>
                   {email !== user.email && (
-                    <button onClick={() => handleRemoveAdmin(email)} className="remove-admin-btn" title="Revoke access">×</button>
-                  )}
-                  {email === user.email && (
-                    <span className="you-badge">You</span>
+                    <button onClick={() => handleRemoveAdmin(email)} className="admin-btn delete" style={{ padding: '6px 12px', fontSize: '0.85rem' }} title="Revoke access">Revoke</button>
                   )}
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
