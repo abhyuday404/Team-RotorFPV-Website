@@ -8,11 +8,18 @@
   height: 90px;
   border-radius: 50px;
   z-index: 1000;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  overflow: hidden;
+}
+
+.navbar-glass {
+  /* Ensure GlassSurface fills the navbar shell completely */
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(120, 180, 255, 0.08) !important;
+}
+
+.navbar-glass .glass-surface__content {
+  padding: 0;
 }
 
 .nav-container {
@@ -21,8 +28,37 @@
   align-items: center;
   height: 100%;
   padding: 0 2rem;
+  position: relative;
 }
 
+/* ── Sliding glass pill indicator ── */
+.nav-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform, width, height, opacity;
+}
+
+.nav-pill--animated {
+  transition:
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+}
+
+.nav-pill-glass {
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow:
+    0 0 8px 1px rgba(255, 255, 255, 0.06) inset,
+    0 0 1px 0.5px rgba(255, 255, 255, 0.12) inset !important;
+}
+
+/* ── Logo ── */
 .nav-logo {
   display: flex;
   align-items: center;
@@ -42,9 +78,12 @@
   object-fit: contain;
 }
 
+/* ── Nav links ── */
 .nav-links {
   display: flex;
   list-style: none;
+  position: relative;
+  z-index: 1;
 }
 
 .left-links {
@@ -61,27 +100,12 @@
   transition: color 0.3s ease;
   position: relative;
   text-transform: capitalize;
+  padding: 6px 4px;
 }
 
 .nav-links a:hover,
 .nav-links a.active {
-  color: var(--accent);
-}
-
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  width: 0;
-  height: 2px;
-  bottom: -4px;
-  left: 0;
-  background-color: var(--accent);
-  transition: width 0.3s ease;
-}
-
-.nav-links a:hover::after,
-.nav-links a.active::after {
-  width: 100%;
+  color: #ffffff;
 }
 
 @media (max-width: 768px) {
