@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase';
@@ -10,6 +10,8 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
   
   // List of current admins fetched from our backend
   const [adminList, setAdminList] = useState([]);
@@ -107,6 +109,38 @@ const Admin = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", "bjas0f0d");
+    data.append("cloud_name", "dipl119bu");
+
+    try {
+      const response = await fetch("https://api.cloudinary.com/v1_1/dipl119bu/image/upload", {
+        method: "POST",
+        body: data,
+      });
+      const uploadedImage = await response.json();
+      if (uploadedImage.secure_url) {
+        setFormData(prev => ({ ...prev, imageUrl: uploadedImage.secure_url }));
+      } else {
+        alert("Upload failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Error uploading image.");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''; // Reset input to allow re-selecting same file
+      }
+    }
   };
 
   const resetForm = () => {
@@ -313,15 +347,30 @@ const Admin = () => {
             </div>
 
             <div className="form-group">
-              <label>Image URL (Optional)</label>
+              <label>Image (Optional)</label>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  ref={fileInputRef}
+                  onChange={handleImageUpload} 
+                  disabled={isUploading}
+                  style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}
+                />
+                {isUploading && <span style={{ color: '#00fff5', fontSize: '0.9rem' }}>Uploading...</span>}
+              </div>
               <input 
                 type="text" 
                 name="imageUrl" 
                 value={formData.imageUrl} 
                 onChange={handleInputChange} 
-                placeholder="https://i.imgur.com/your-image.jpg"
+                placeholder="Or paste an image URL directly here..."
               />
-              <small>Upload image to Imgur/Discord and paste link here.</small>
+              {formData.imageUrl && (
+                <div style={{ marginTop: '10px', border: '1px solid rgba(255,255,255,0.1)', padding: '5px', borderRadius: '5px', display: 'inline-block' }}>
+                  <img src={formData.imageUrl} alt="Preview" style={{ height: '80px', borderRadius: '4px', objectFit: 'cover' }} />
+                </div>
+              )}
             </div>
 
             <div className="form-group">

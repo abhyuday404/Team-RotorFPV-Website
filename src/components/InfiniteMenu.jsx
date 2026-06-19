@@ -35,8 +35,6 @@ void main() {
         // ...
     }
 
-    worldPosition.xyz = radius * normalize(worldPosition.xyz);
-
     gl_Position = uProjectionMatrix * uViewMatrix * worldPosition;
 
     vAlpha = smoothstep(0.5, 1., normalize(worldPosition.xyz).z) * .9 + .1;
@@ -81,7 +79,16 @@ void main() {
     st = st * cellSize + cellOffset;
     
     outColor = texture(uTex, st);
-    outColor.a *= vAlpha;
+    
+    // Calculate rounded corners using SDF (Signed Distance Field)
+    float cornerRadius = 0.08; // Adjust for more or less rounding
+    vec2 halfSize = vec2(0.5 * (16.0 / 9.0), 0.5);
+    vec2 p = abs(vUvs - 0.5) * vec2(16.0 / 9.0, 1.0);
+    vec2 d = p - halfSize + cornerRadius;
+    float dist = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - cornerRadius;
+    float cornerAlpha = 1.0 - smoothstep(-0.01, 0.01, dist);
+
+    outColor.a *= vAlpha * cornerAlpha;
 }
 `;
 
@@ -215,29 +222,31 @@ class IcosahedronGeometry extends Geometry {
   }
 }
 
-class DiscGeometry extends Geometry {
-  constructor(steps = 4, radius = 1) {
+class PlaneGeometry extends Geometry {
+  constructor(width = 2.4, height = 1.35) { // 16:9 aspect ratio
     super();
-    steps = Math.max(4, steps);
+    const w = width / 2;
+    const h = height / 2;
 
-    const alpha = (2 * Math.PI) / steps;
+    this.addVertex(-w, -h, 0); // 0: bottom-left
+    this.lastVertex.uv[0] = 0;
+    this.lastVertex.uv[1] = 0;
 
-    this.addVertex(0, 0, 0);
-    this.lastVertex.uv[0] = 0.5;
-    this.lastVertex.uv[1] = 0.5;
+    this.addVertex(w, -h, 0);  // 1: bottom-right
+    this.lastVertex.uv[0] = 1;
+    this.lastVertex.uv[1] = 0;
 
-    for (let i = 0; i < steps; ++i) {
-      const x = Math.cos(alpha * i);
-      const y = Math.sin(alpha * i);
-      this.addVertex(radius * x, radius * y, 0);
-      this.lastVertex.uv[0] = x * 0.5 + 0.5;
-      this.lastVertex.uv[1] = y * 0.5 + 0.5;
+    this.addVertex(w, h, 0);   // 2: top-right
+    this.lastVertex.uv[0] = 1;
+    this.lastVertex.uv[1] = 1;
 
-      if (i > 0) {
-        this.addFace(0, i, i + 1);
-      }
-    }
-    this.addFace(0, steps, 1);
+    this.addVertex(-w, h, 0);  // 3: top-left
+    this.lastVertex.uv[0] = 0;
+    this.lastVertex.uv[1] = 1;
+
+    // Two triangles to make a rectangle
+    this.addFace(0, 1, 2);
+    this.addFace(0, 2, 3);
   }
 }
 
@@ -571,7 +580,7 @@ class InfiniteGridMenu {
       uAtlasSize: gl.getUniformLocation(this.discProgram, 'uAtlasSize')
     };
 
-    this.discGeo = new DiscGeometry(56, 1);
+    this.discGeo = new PlaneGeometry(2.4, 1.35); // 16:9 Rectangle
     this.discBuffers = this.discGeo.data;
     this.discVAO = makeVertexArray(
       gl,
@@ -627,7 +636,24 @@ class InfiniteGridMenu {
       images.forEach((img, i) => {
         const x = (i % this.atlasSize) * cellSize;
         const y = Math.floor(i / this.atlasSize) * cellSize;
-        ctx.drawImage(img, x, y, cellSize, cellSize);
+        
+        // Calculate object-fit: cover to fill the new 16:9 rectangular cards
+        const imgAspect = img.width / img.height;
+        const targetAspect = 16 / 9;
+        let sWidth = img.width;
+        let sHeight = img.height;
+        let sx = 0;
+        let sy = 0;
+
+        if (imgAspect > targetAspect) {
+          sWidth = img.height * targetAspect;
+          sx = (img.width - sWidth) / 2;
+        } else if (imgAspect < targetAspect) {
+          sHeight = img.width / targetAspect;
+          sy = (img.height - sHeight) / 2;
+        }
+
+        ctx.drawImage(img, sx, sy, sWidth, sHeight, x, y, cellSize, cellSize);
       });
 
       gl.bindTexture(gl.TEXTURE_2D, this.tex);

@@ -47,7 +47,7 @@
   font-weight: 700;
 }
 
-/* ─── Title Overlay — bottom left ─── */
+/* ─── Title Overlay — vertically centered left ─── */
 .face-title {
   user-select: none;
   position: absolute;
@@ -56,16 +56,16 @@
   font-family: 'Outfit', sans-serif;
   color: #ffffff;
   left: 2.5rem;
-  bottom: 5rem;
-  transform: translateY(20px);
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+  top: 50%;
+  transform: translateY(calc(-50% + 20px));
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
   line-height: 1.2;
-  max-width: 40%;
+  max-width: 30%;
 }
 
 .face-title.active {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(-50%);
   pointer-events: auto;
   transition: 0.5s ease;
 }
@@ -73,29 +73,29 @@
 .face-title.inactive {
   pointer-events: none;
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(calc(-50% + 20px));
   transition: 0.15s ease;
 }
 
-/* ─── Description Overlay — bottom right ─── */
+/* ─── Description Overlay — vertically centered right ─── */
 .face-description {
   user-select: none;
   position: absolute;
-  max-width: 22ch;
-  bottom: 5rem;
+  max-width: 25ch;
+  top: 50%;
   right: 2.5rem;
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   font-family: 'Inter', sans-serif;
-  color: #8892B0;
+  color: #ffffff;
   text-align: right;
   line-height: 1.6;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
-  transform: translateY(20px);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+  transform: translateY(calc(-50% + 20px));
 }
 
 .face-description.active {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(-50%);
   pointer-events: auto;
   transition: 0.5s ease;
 }
@@ -103,7 +103,7 @@
 .face-description.inactive {
   pointer-events: none;
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(calc(-50% + 20px));
   transition: 0.15s ease;
 }
 
@@ -129,15 +129,13 @@
   .face-title {
     font-size: 1.5rem;
     left: 1.5rem;
-    bottom: 4rem;
-    max-width: 50%;
+    max-width: 35%;
   }
 
   .face-description {
-    font-size: 0.9rem;
+    font-size: 1.1rem;
     right: 1.5rem;
-    bottom: 4rem;
-    max-width: 18ch;
+    max-width: 20ch;
   }
 }
 
@@ -145,8 +143,7 @@
   .face-title {
     font-size: 1.3rem;
     left: 1rem;
-    bottom: 3rem;
-    max-width: 55%;
+    max-width: 45%;
   }
 
   .face-description {
