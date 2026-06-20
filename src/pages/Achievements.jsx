@@ -26,14 +26,6 @@ const Achievements = () => {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    // Lock body scroll while on this page
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-
   if (loading) {
     return (
       <div className="achievements-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white', minHeight: '100vh' }}>
