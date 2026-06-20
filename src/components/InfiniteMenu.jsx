@@ -660,23 +660,45 @@ class InfiniteGridMenu {
         const x = (i % this.atlasSize) * cellSize;
         const y = Math.floor(i / this.atlasSize) * cellSize;
         
-        // Calculate object-fit: cover to fill the new 16:9 rectangular cards
+        const item = this.items[i];
+        const isLogo = item && item.image && item.image.includes('JUSTLOGO');
         const imgAspect = img.width / img.height;
         const targetAspect = 16 / 9;
-        let sWidth = img.width;
-        let sHeight = img.height;
-        let sx = 0;
-        let sy = 0;
 
-        if (imgAspect > targetAspect) {
-          sWidth = img.height * targetAspect;
-          sx = (img.width - sWidth) / 2;
-        } else if (imgAspect < targetAspect) {
-          sHeight = img.width / targetAspect;
-          sy = (img.height - sHeight) / 2;
+        if (isLogo) {
+          // object-fit: contain
+          let dWidth = cellSize;
+          let dHeight = cellSize;
+          let dx = x;
+          let dy = y;
+
+          if (imgAspect > targetAspect) {
+            dHeight = cellSize * (targetAspect / imgAspect);
+            dy = y + (cellSize - dHeight) / 2;
+          } else {
+            dWidth = cellSize * (imgAspect / targetAspect);
+            dx = x + (cellSize - dWidth) / 2;
+          }
+
+          // Optional: fill background for the logo if needed, but transparent is usually fine.
+          ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dWidth, dHeight);
+        } else {
+          // object-fit: cover
+          let sWidth = img.width;
+          let sHeight = img.height;
+          let sx = 0;
+          let sy = 0;
+
+          if (imgAspect > targetAspect) {
+            sWidth = img.height * targetAspect;
+            sx = (img.width - sWidth) / 2;
+          } else if (imgAspect < targetAspect) {
+            sHeight = img.width / targetAspect;
+            sy = (img.height - sHeight) / 2;
+          }
+
+          ctx.drawImage(img, sx, sy, sWidth, sHeight, x, y, cellSize, cellSize);
         }
-
-        ctx.drawImage(img, sx, sy, sWidth, sHeight, x, y, cellSize, cellSize);
       });
 
       gl.bindTexture(gl.TEXTURE_2D, this.tex);
