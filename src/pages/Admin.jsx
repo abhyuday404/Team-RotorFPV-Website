@@ -613,7 +613,7 @@ const Admin = () => {
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
                     <input 
                       type="file" 
-                      accept="image/*" 
+                      accept="image/*,.heic,.heif" 
                       ref={fileInputRef}
                       onChange={handleImageUpload} 
                       disabled={isUploading}
@@ -706,7 +706,7 @@ const Admin = () => {
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
                     <input 
                       type="file" 
-                      accept="image/*" 
+                      accept="image/*,.heic,.heif" 
                       multiple
                       ref={galleryFileInputRef}
                       onChange={handleGalleryImageUpload} 

@@ -65,7 +65,7 @@ cloudinary.config({
 });
 
 // ── Multer configuration (memory storage, image-only, 10 MB limit) ──
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -74,7 +74,7 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      return cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed.'));
+      return cb(new Error('Only JPEG, PNG, WebP, GIF, and HEIC images are allowed.'));
     }
     cb(null, true);
   },
@@ -272,8 +272,12 @@ app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) =>
       stream.end(req.file.buffer);
     });
 
+    // Optimize Cloudinary URL to automatically handle format (e.g., HEIC -> WebP) and quality
+    const parts = result.secure_url.split('/upload/');
+    const optimizedUrl = `${parts[0]}/upload/f_auto,q_auto/${parts[1]}`;
+
     res.json({
-      secure_url: result.secure_url,
+      secure_url: optimizedUrl,
       width: result.width,
       height: result.height,
     });
