@@ -65,7 +65,8 @@ cloudinary.config({
 });
 
 // ── Multer configuration (memory storage, image-only, 10 MB limit) ──
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'image/heic-sequence', 'application/octet-stream', ''];
+const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -73,7 +74,15 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10 MB
   },
   fileFilter: (req, file, cb) => {
-    if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    const ext = file.originalname ? file.originalname.split('.').pop().toLowerCase() : '';
+    
+    // Browsers often don't have a registered MIME type for HEIC files 
+    // and send them as application/octet-stream or empty string.
+    // We check both the mime type and the file extension for safety.
+    const isValidMime = ALLOWED_MIME_TYPES.includes(file.mimetype);
+    const isValidExt = ALLOWED_EXTS.includes(ext);
+
+    if (!(isValidMime && isValidExt)) {
       return cb(new Error('Only JPEG, PNG, WebP, GIF, and HEIC images are allowed.'));
     }
     cb(null, true);
