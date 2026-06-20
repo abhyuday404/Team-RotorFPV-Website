@@ -34,6 +34,8 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
+  'https://teamrotorfpv.com',
+  'https://www.teamrotorfpv.com',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
