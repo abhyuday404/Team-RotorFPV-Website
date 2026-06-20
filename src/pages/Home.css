@@ -58,10 +58,6 @@
   color: var(--accent-blue);
 }
 
-.Typewriter__cursor {
-  color: var(--accent-blue);
-}
-
 @keyframes slideUp {
   from {
     opacity: 0;
