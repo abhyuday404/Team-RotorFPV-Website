@@ -52,7 +52,7 @@ a {
 
 /* Page Layout */
 main {
-  flex: 1;
+  flex: 1 0 auto;
   padding-top: 100px; /* space for fixed floating navbar */
   display: flex;
   flex-direction: column;

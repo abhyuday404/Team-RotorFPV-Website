@@ -1,5 +1,5 @@
 .gallery-page {
-  flex: 1;
+  flex: 1 0 auto;
   padding-top: 40px;
   display: flex;
   flex-direction: column;
