@@ -21,8 +21,8 @@ async function makeAdmin() {
 
   try {
     const userRecord = await getAuth().getUserByEmail(email);
-    await getAuth().setCustomUserClaims(userRecord.uid, { admin: true });
-    console.log(`Successfully granted admin privileges to ${email}`);
+    await getAuth().setCustomUserClaims(userRecord.uid, { admin: true, superAdmin: true });
+    console.log(`Successfully granted super admin privileges to ${email}`);
     process.exit(0);
   } catch (error) {
     console.error('Error granting admin privileges:', error);

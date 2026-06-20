@@ -7,10 +7,12 @@ import Achievements from './pages/Achievements';
 import Admin from './pages/Admin';
 import Gallery from './pages/Gallery';
 import Silk from './components/Silk';
+import MobileOverlay from './components/MobileOverlay';
 
 function App() {
   return (
     <Router>
+      <MobileOverlay />
       <div className="app-background">
         <Silk
           speed={3.7}

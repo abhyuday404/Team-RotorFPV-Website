@@ -556,7 +556,7 @@ const Admin = () => {
         >
           Gallery
         </button>
-        {(user?.isSuperAdmin || user?.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL) && (
+        {(user?.isSuperAdmin) && (
           <button 
             className={`admin-tab ${activeTab === 'admins' ? 'active' : ''}`}
             onClick={() => setActiveTab('admins')}
@@ -770,7 +770,7 @@ const Admin = () => {
           </>
         )}
 
-        {activeTab === 'admins' && (user?.isSuperAdmin || user?.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL) && (
+        {activeTab === 'admins' && (user?.isSuperAdmin) && (
           <>
             <div className="admin-glass-panel form-panel">
               <h2>Grant Admin Access</h2>
