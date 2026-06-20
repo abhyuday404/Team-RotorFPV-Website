@@ -1,6 +1,5 @@
 .gallery-page {
-  min-height: 100vh;
-  padding-top: 100px; /* Leave some space for navbar */
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
