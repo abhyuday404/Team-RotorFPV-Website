@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import Masonry from '../components/Masonry';
@@ -50,7 +51,7 @@ const Gallery = () => {
       </div>
 
       {/* Lightbox Modal */}
-      {selectedImage && (
+      {selectedImage && createPortal(
         <div className="gallery-lightbox" onClick={() => setSelectedImage(null)}>
           <button className="gallery-lightbox-close" onClick={() => setSelectedImage(null)}>
             &times;
@@ -60,7 +61,8 @@ const Gallery = () => {
             alt="Enlarged gallery view" 
             onClick={(e) => e.stopPropagation()} 
           />
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
