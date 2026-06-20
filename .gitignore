@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
 
 # Editor directories and files
 .vscode/*
@@ -28,3 +30,4 @@ serviceAccountKey.json
 server/serviceAccountKey.json
 server/.env
 server/node_modules
+.firebase/

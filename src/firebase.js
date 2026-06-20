@@ -4,12 +4,12 @@ import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBdOYIx-dW51-jEbtVZ48t42W12iBF5Ryc",
-  authDomain: "teamrotor-fpv-website.firebaseapp.com",
-  projectId: "teamrotor-fpv-website",
-  storageBucket: "teamrotor-fpv-website.firebasestorage.app",
-  messagingSenderId: "361893112217",
-  appId: "1:361893112217:web:601660130f5f20c18a0b08"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase

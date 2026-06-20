@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import multer from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import dotenv from 'dotenv';
@@ -27,6 +29,29 @@ initializeApp({
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ── Cloudinary configuration ──
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// ── Multer configuration (memory storage, image-only, 10 MB limit) ──
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      return cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed.'));
+    }
+    cb(null, true);
+  },
+});
 
 // Middleware to verify if the requester is an admin
 const verifyAdmin = async (req, res, next) => {
@@ -116,6 +141,49 @@ app.get('/api/admins', verifyAdmin, async (req, res) => {
     console.error('Error listing admins:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// ── Image upload endpoint (admin-only, signed Cloudinary upload) ──
+app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'team-rotor' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
+    res.json({
+      secure_url: result.secure_url,
+      width: result.width,
+      height: result.height,
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+// Handle multer errors (file too large, wrong type)
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'File too large. Maximum size is 10 MB.' });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+  if (err.message && err.message.includes('images are allowed')) {
+    return res.status(400).json({ error: err.message });
+  }
+  next(err);
 });
 
 const PORT = process.env.PORT || 3000;

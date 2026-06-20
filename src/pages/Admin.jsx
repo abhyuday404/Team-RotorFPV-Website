@@ -140,20 +140,23 @@ const Admin = () => {
 
     setIsUploading(true);
     const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", "bjas0f0d");
-    data.append("cloud_name", "dipl119bu");
+    data.append("image", file);
 
     try {
-      const response = await fetch("https://api.cloudinary.com/v1_1/dipl119bu/image/upload", {
+      const idToken = await auth.currentUser.getIdToken();
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/upload`, {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        },
         body: data,
       });
       const uploadedImage = await response.json();
-      if (uploadedImage.secure_url) {
+      if (response.ok && uploadedImage.secure_url) {
         setFormData(prev => ({ ...prev, imageUrl: uploadedImage.secure_url }));
       } else {
-        alert("Upload failed. Please try again.");
+        alert(uploadedImage.error || "Upload failed. Please try again.");
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -243,17 +246,20 @@ const Admin = () => {
 
     setIsUploading(true);
     const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", "bjas0f0d");
-    data.append("cloud_name", "dipl119bu");
+    data.append("image", file);
 
     try {
-      const response = await fetch("https://api.cloudinary.com/v1_1/dipl119bu/image/upload", {
+      const idToken = await auth.currentUser.getIdToken();
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/upload`, {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        },
         body: data,
       });
       const uploadedImage = await response.json();
-      if (uploadedImage.secure_url) {
+      if (response.ok && uploadedImage.secure_url) {
         setGalleryFormData(prev => ({ 
           ...prev, 
           imgUrl: uploadedImage.secure_url,
@@ -261,7 +267,7 @@ const Admin = () => {
           originalHeight: uploadedImage.height
         }));
       } else {
-        alert("Upload failed. Please try again.");
+        alert(uploadedImage.error || "Upload failed. Please try again.");
       }
     } catch (error) {
       console.error("Upload error:", error);
