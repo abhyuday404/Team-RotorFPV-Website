@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+ 
 import { useEffect, useRef, useState } from 'react';
 import { mat4, quat, vec2, vec3 } from 'gl-matrix';
 import './InfiniteMenu.css';
@@ -366,24 +366,35 @@ class ArcballControl {
     this._rotationVelocity = 0;
     this._combinedQuat = quat.create();
 
-    canvas.addEventListener('pointerdown', e => {
+    this.handlePointerDown = e => {
       vec2.set(this.pointerPos, e.clientX, e.clientY);
       vec2.copy(this.previousPointerPos, this.pointerPos);
       this.isPointerDown = true;
-    });
-    canvas.addEventListener('pointerup', () => {
+    };
+    
+    this.handlePointerUp = () => {
       this.isPointerDown = false;
-    });
-    canvas.addEventListener('pointerleave', () => {
-      this.isPointerDown = false;
-    });
-    canvas.addEventListener('pointermove', e => {
+    };
+    
+    this.handlePointerMove = e => {
       if (this.isPointerDown) {
         vec2.set(this.pointerPos, e.clientX, e.clientY);
       }
-    });
+    };
+
+    canvas.addEventListener('pointerdown', this.handlePointerDown);
+    canvas.addEventListener('pointerup', this.handlePointerUp);
+    canvas.addEventListener('pointerleave', this.handlePointerUp);
+    canvas.addEventListener('pointermove', this.handlePointerMove);
 
     canvas.style.touchAction = 'none';
+  }
+
+  destroy() {
+    this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
+    this.canvas.removeEventListener('pointerup', this.handlePointerUp);
+    this.canvas.removeEventListener('pointerleave', this.handlePointerUp);
+    this.canvas.removeEventListener('pointermove', this.handlePointerMove);
   }
 
   update(deltaTime, targetFrameDuration = 16) {
@@ -536,6 +547,8 @@ class InfiniteGridMenu {
   }
 
   run(time = 0) {
+    if (!this.gl) return; // Prevent run loop if WebGL failed
+    
     this.#deltaTime = Math.min(32, time - this.#time);
     this.#time = time;
     this.#deltaFrames = this.#deltaTime / this.TARGET_FRAME_DURATION;
@@ -544,14 +557,24 @@ class InfiniteGridMenu {
     this.#animate(this.#deltaTime);
     this.#render();
 
-    requestAnimationFrame(t => this.run(t));
+    this.animationFrameId = requestAnimationFrame(t => this.run(t));
+  }
+
+  destroy() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+    }
+    if (this.control) {
+      this.control.destroy();
+    }
   }
 
   #init(onInit) {
     this.gl = this.canvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: false });
     const gl = this.gl;
     if (!gl) {
-      throw new Error('No WebGL 2 context!');
+      console.warn('No WebGL 2 context available. Infinite Menu will not render.');
+      return;
     }
 
     this.viewportSize = vec2.fromValues(this.canvas.clientWidth, this.canvas.clientHeight);
@@ -883,6 +906,9 @@ export default function InfiniteMenu({ items = [], scale = 1.0 }) {
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      if (sketch) {
+        sketch.destroy();
+      }
     };
   }, [items, scale]);
 

@@ -121,11 +121,7 @@ const GlassSurface = ({
     setTimeout(updateDisplacementMap, 0);
   }, [width, height]);
 
-  useEffect(() => {
-    setSvgSupported(supportsSVGFilters());
-  }, []);
-
-  const supportsSVGFilters = () => {
+  function supportsSVGFilters() {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       return false;
     }
@@ -141,7 +137,12 @@ const GlassSurface = ({
     div.style.backdropFilter = `url(#${filterId})`;
 
     return div.style.backdropFilter !== '';
-  };
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSvgSupported(supportsSVGFilters());
+  }, []);
 
   const containerStyle = {
     ...style,

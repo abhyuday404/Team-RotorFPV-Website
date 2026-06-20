@@ -1,10 +1,12 @@
-import React from 'react';
-import Typewriter from 'typewriter-effect';
+import React, { useRef } from 'react';
+import VariableProximity from '../components/VariableProximity';
 import './Home.css';
 
 const Home = () => {
+  const containerRef = useRef(null);
+
   return (
-    <div className="home-container">
+    <div className="home-container" ref={containerRef}>
       <div className="video-background">
         <video autoPlay loop muted playsInline>
           <source src="/TRFPV Assets/Teamvideo.mp4" type="video/mp4" />
@@ -15,27 +17,14 @@ const Home = () => {
       
       <div className="hero-content">
         <h1 className="brand-font hero-quote">
-          <Typewriter
-            options={{
-              delay: 80,
-            }}
-            onInit={(typewriter) => {
-              typewriter
-                .typeString('<span class="word">Build</span> ')
-                .pauseFor(300)
-                .typeString('<span class="dot">.</span> ')
-                .pauseFor(300)
-                .typeString('<span class="word">Fly</span> ')
-                .pauseFor(300)
-                .typeString('<span class="dot">.</span> ')
-                .pauseFor(300)
-                .typeString('<span class="word">Crash</span> ')
-                .pauseFor(300)
-                .typeString('<span class="dot">.</span> ')
-                .pauseFor(500)
-                .typeString('<span class="word highlight">Repeat</span>')
-                .start();
-            }}
+          <VariableProximity
+            label='"Build . Fly . Crash . Repeat"'
+            className="variable-proximity-demo"
+            fromFontVariationSettings="'wght' 200, 'opsz' 9"
+            toFontVariationSettings="'wght' 500, 'opsz' 40"
+            containerRef={containerRef}
+            radius={120}
+            falloff="exponential"
           />
         </h1>
       </div>

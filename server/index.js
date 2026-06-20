@@ -4,6 +4,7 @@ import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -26,8 +27,27 @@ initializeApp({
   credential: cert(serviceAccount)
 });
 
+const db = getFirestore();
+
 const app = express();
-app.use(cors());
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like server-to-server or curl)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
+
 app.use(express.json());
 
 // ── Cloudinary configuration ──
@@ -62,7 +82,8 @@ const verifyAdmin = async (req, res, next) => {
 
   const token = authHeader.split('Bearer ')[1];
   try {
-    const decodedToken = await getAuth().verifyIdToken(token);
+    // verifyIdToken(token, checkRevoked) - passing true checks if the token was revoked
+    const decodedToken = await getAuth().verifyIdToken(token, true);
     if (decodedToken.admin !== true) {
       return res.status(403).json({ error: 'Forbidden: Requires admin privileges' });
     }
@@ -74,50 +95,85 @@ const verifyAdmin = async (req, res, next) => {
   }
 };
 
-// Endpoint to grant admin access
-app.post('/api/setAdmin', verifyAdmin, async (req, res) => {
-  const { email } = req.body;
-  
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
+// Middleware to verify if the requester is a Super Admin
+const verifySuperAdmin = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
   }
 
+  const token = authHeader.split('Bearer ')[1];
   try {
-    // Look up the user by email
+    const decodedToken = await getAuth().verifyIdToken(token, true);
+    if (decodedToken.superAdmin !== true && decodedToken.email !== process.env.SUPER_ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'Forbidden: Requires Super Admin privileges' });
+    }
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    console.error('Token verification error:', error);
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+  }
+};
+
+const logAudit = async (action, userEmail, targetEmail) => {
+  const logMessage = `[ROLE CHANGE] ${userEmail} ${action} ${targetEmail}`;
+  console.log(logMessage);
+  try {
+    await db.collection('audit_logs').add({
+      action,
+      userEmail,
+      targetEmail,
+      timestamp: new Date()
+    });
+  } catch (e) {
+    console.error("Failed to write audit log:", e);
+  }
+};
+
+// Endpoint to grant admin access
+app.post('/api/setAdmin', verifySuperAdmin, async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
     const userRecord = await getAuth().getUserByEmail(email);
-    
-    // Set custom claim
-    await getAuth().setCustomUserClaims(userRecord.uid, { admin: true });
-    
+    const isSuper = userRecord.customClaims?.superAdmin === true;
+    await getAuth().setCustomUserClaims(userRecord.uid, { admin: true, superAdmin: isSuper });
+    await logAudit('granted admin to', req.user.email, email);
     res.json({ message: `Successfully granted admin privileges to ${email}` });
   } catch (error) {
     console.error('Error setting admin:', error);
-    if (error.code === 'auth/user-not-found') {
-      return res.status(404).json({ error: 'User not found. They must sign in at least once first.' });
-    }
+    if (error.code === 'auth/user-not-found') return res.status(404).json({ error: 'User not found. They must sign in at least once first.' });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Endpoint to revoke admin access
-app.post('/api/removeAdmin', verifyAdmin, async (req, res) => {
+app.post('/api/removeAdmin', verifySuperAdmin, async (req, res) => {
   const { email } = req.body;
-  
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
-  }
+  if (!email) return res.status(400).json({ error: 'Email is required' });
 
-  // Prevent admin from removing themselves
+  if (email === process.env.SUPER_ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'The root Super Admin cannot be modified.' });
+  }
   if (req.user.email === email) {
-    return res.status(400).json({ error: 'You cannot remove your own admin privileges.' });
+    return res.status(400).json({ error: 'You cannot remove your own privileges.' });
   }
 
   try {
     const userRecord = await getAuth().getUserByEmail(email);
-    
-    // Remove custom claim (or set to false)
-    await getAuth().setCustomUserClaims(userRecord.uid, { admin: false });
-    
+    if (userRecord.customClaims?.superAdmin === true) {
+      const listUsersResult = await getAuth().listUsers(1000);
+      const superAdmins = listUsersResult.users.filter(u => u.customClaims?.superAdmin === true);
+      if (superAdmins.length <= 1 && req.user.email !== process.env.SUPER_ADMIN_EMAIL) {
+         return res.status(400).json({ error: 'At least one Super Admin must remain.' });
+      }
+    }
+
+    await getAuth().setCustomUserClaims(userRecord.uid, { admin: false, superAdmin: false });
+    await getAuth().revokeRefreshTokens(userRecord.uid);
+    await logAudit('revoked admin from', req.user.email, email);
     res.json({ message: `Successfully revoked admin privileges from ${email}` });
   } catch (error) {
     console.error('Error revoking admin:', error);
@@ -125,16 +181,64 @@ app.post('/api/removeAdmin', verifyAdmin, async (req, res) => {
   }
 });
 
+// Endpoint to set super admin
+app.post('/api/setSuperAdmin', verifySuperAdmin, async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+    const userRecord = await getAuth().getUserByEmail(email);
+    await getAuth().setCustomUserClaims(userRecord.uid, { admin: true, superAdmin: true });
+    await logAudit('promoted to super admin', req.user.email, email);
+    res.json({ message: `Successfully promoted ${email} to Super Admin` });
+  } catch (error) {
+    console.error('Error setting super admin:', error);
+    if (error.code === 'auth/user-not-found') return res.status(404).json({ error: 'User not found.' });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Endpoint to remove super admin
+app.post('/api/removeSuperAdmin', verifySuperAdmin, async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  if (email === process.env.SUPER_ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'The root Super Admin cannot be modified.' });
+  }
+  if (req.user.email === email) {
+    return res.status(400).json({ error: 'You cannot demote yourself.' });
+  }
+
+  try {
+    const listUsersResult = await getAuth().listUsers(1000);
+    const superAdmins = listUsersResult.users.filter(u => u.customClaims?.superAdmin === true);
+    if (superAdmins.length <= 1 && req.user.email !== process.env.SUPER_ADMIN_EMAIL) {
+       return res.status(400).json({ error: 'At least one Super Admin must remain.' });
+    }
+
+    const userRecord = await getAuth().getUserByEmail(email);
+    await getAuth().setCustomUserClaims(userRecord.uid, { admin: true, superAdmin: false });
+    await getAuth().revokeRefreshTokens(userRecord.uid);
+    await logAudit('demoted from super admin', req.user.email, email);
+    res.json({ message: `Successfully demoted ${email} to regular Admin` });
+  } catch (error) {
+    console.error('Error removing super admin:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Endpoint to list all admins (optional utility)
 app.get('/api/admins', verifyAdmin, async (req, res) => {
   try {
-    // In a real app with many users, you'd probably store admin status in Firestore too just for querying,
-    // since Firebase Auth doesn't have a direct "get users with claim" query.
-    // For this small app, we iterate through all users (up to 1000)
     const listUsersResult = await getAuth().listUsers(1000);
     const admins = listUsersResult.users
       .filter(user => user.customClaims && user.customClaims.admin === true)
-      .map(user => user.email);
+      .map(user => ({
+         email: user.email,
+         isSuperAdmin: user.customClaims.superAdmin === true || user.email === process.env.SUPER_ADMIN_EMAIL,
+         isRoot: user.email === process.env.SUPER_ADMIN_EMAIL
+      }));
       
     res.json({ admins });
   } catch (error) {

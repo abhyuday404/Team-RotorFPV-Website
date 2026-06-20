@@ -18,6 +18,9 @@ const Gallery = () => {
       }));
       setGalleryItems(data);
       setLoading(false);
+    }, (error) => {
+      console.error("Error fetching gallery:", error);
+      setLoading(false);
     });
 
     return () => unsubscribe();

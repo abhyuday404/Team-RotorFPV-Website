@@ -4,6 +4,7 @@
   color: white;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .flex-center {
@@ -145,6 +146,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
+  min-height: 650px;
 }
 
 @media (max-width: 900px) {

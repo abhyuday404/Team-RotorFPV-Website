@@ -43,7 +43,7 @@
 
 .hero-quote {
   font-family: 'Montserrat', sans-serif;
-  font-size: 2.5rem; /* Reduced from 4rem */
+  font-size: 2rem;
   font-weight: 200; /* Extremely thin/sleek */
   text-align: center;
   text-transform: uppercase;
@@ -51,12 +51,11 @@
 }
 
 .hero-quote .dot {
-  color: var(--accent);
+  color: var(--text-primary);
 }
 
 .hero-quote .highlight {
   color: var(--accent-blue);
-  text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
 }
 
 .Typewriter__cursor {
@@ -76,6 +75,6 @@
 
 @media (max-width: 768px) {
   .hero-quote {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
   }
 }

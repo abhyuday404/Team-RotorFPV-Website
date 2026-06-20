@@ -131,7 +131,7 @@ const Masonry = ({
   const hasMounted = useRef(false);
 
   useLayoutEffect(() => {
-    if (!imagesReady) return;
+    if (!imagesReady || !grid.length) return;
 
     grid.forEach((item, index) => {
       const selector = `[data-key="${item.id}"]`;
@@ -223,7 +223,7 @@ const Masonry = ({
 
   return (
     <div ref={containerRef} className="list" style={{ height: containerHeight }}>
-      {grid.map(item => {
+      {imagesReady && grid.map(item => {
         return (
           <div
             key={item.id}

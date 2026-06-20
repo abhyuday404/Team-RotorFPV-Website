@@ -36,7 +36,16 @@ const Admin = () => {
   });
 
   useEffect(() => {
+    let firestoreUnsubscribes = [];
+
+    const clearFirestoreListeners = () => {
+      firestoreUnsubscribes.forEach(unsub => unsub());
+      firestoreUnsubscribes = [];
+    };
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      clearFirestoreListeners(); // Clear old listeners if auth state changes
+      
       if (!currentUser) {
         setUser(null);
         setLoading(false);
@@ -47,40 +56,42 @@ const Admin = () => {
         // Fetch custom claims to check if user is an admin
         const token = await currentUser.getIdTokenResult();
         const isAdmin = token.claims.admin === true;
+        const isSuperAdmin = token.claims.superAdmin === true;
         
         setUser({
           ...currentUser,
-          isAdmin
+          isAdmin,
+          isSuperAdmin
         });
 
         if (isAdmin) {
-          const unsubscribes = [];
-          
           // Fetch achievements only if they are an admin
           const qAchievements = query(collection(db, 'achievements'), orderBy('order', 'desc'));
-          unsubscribes.push(onSnapshot(qAchievements, (snapshot) => {
+          firestoreUnsubscribes.push(onSnapshot(qAchievements, (snapshot) => {
             const data = snapshot.docs.map(doc => ({
               id: doc.id,
               ...doc.data()
             }));
             setAchievements(data);
             setLoading(false);
+          }, (error) => {
+            console.error("Error fetching admin achievements:", error);
+            setLoading(false);
           }));
 
           const qGallery = query(collection(db, 'gallery'), orderBy('order', 'desc'));
-          unsubscribes.push(onSnapshot(qGallery, (snapshot) => {
+          firestoreUnsubscribes.push(onSnapshot(qGallery, (snapshot) => {
             const data = snapshot.docs.map(doc => ({
               id: doc.id,
               ...doc.data()
             }));
             setGalleryItems(data);
+          }, (error) => {
+            console.error("Error fetching admin gallery:", error);
+            setLoading(false);
           }));
           
-          fetchAdminsList(currentUser);
-
-          return () => {
-            unsubscribes.forEach(unsub => unsub());
-          };
+          fetchAdminsList();
         } else {
           setLoading(false);
         }
@@ -90,12 +101,15 @@ const Admin = () => {
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      unsubscribeAuth();
+      clearFirestoreListeners(); // Cleanup listeners when component unmounts
+    };
   }, []);
 
-  const fetchAdminsList = async (currentUser) => {
+  async function fetchAdminsList() {
     try {
-      const idToken = await currentUser.getIdToken();
+      const idToken = await auth.currentUser.getIdToken();
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const res = await fetch(`${apiUrl}/api/admins`, {
         headers: {
@@ -241,37 +255,61 @@ const Admin = () => {
   };
 
   const handleGalleryImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
 
     setIsUploading(true);
-    const data = new FormData();
-    data.append("image", file);
 
     try {
       const idToken = await auth.currentUser.getIdToken();
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${apiUrl}/api/upload`, {
-        method: "POST",
-        headers: {
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: data,
-      });
-      const uploadedImage = await response.json();
-      if (response.ok && uploadedImage.secure_url) {
-        setGalleryFormData(prev => ({ 
-          ...prev, 
-          imgUrl: uploadedImage.secure_url,
-          originalWidth: uploadedImage.width,
-          originalHeight: uploadedImage.height
-        }));
-      } else {
-        alert(uploadedImage.error || "Upload failed. Please try again.");
+
+      for (const file of files) {
+        const data = new FormData();
+        data.append("image", file);
+
+        const response = await fetch(`${apiUrl}/api/upload`, {
+          method: "POST",
+          headers: {
+            'Authorization': `Bearer ${idToken}`
+          },
+          body: data,
+        });
+
+        const uploadedImage = await response.json();
+
+        if (response.ok && uploadedImage.secure_url) {
+          // Instead of just setting form data, if they select multiple files,
+          // we should automatically save each one directly to Firestore to save them time!
+          if (files.length > 1 || editingGalleryId === null) {
+            const dataToSave = {
+              img: uploadedImage.secure_url,
+              order: Number(galleryFormData.order),
+              originalWidth: uploadedImage.width || 600,
+              originalHeight: uploadedImage.height || 400,
+              url: "" 
+            };
+            await addDoc(collection(db, 'gallery'), dataToSave);
+          } else {
+            // If they just selected 1 file and might be editing, just populate the form
+            setGalleryFormData(prev => ({ 
+              ...prev, 
+              imgUrl: uploadedImage.secure_url,
+              originalWidth: uploadedImage.width,
+              originalHeight: uploadedImage.height
+            }));
+          }
+        } else {
+          alert(`Upload failed for ${file.name}: ${uploadedImage.error || "Please try again."}`);
+        }
+      }
+      
+      if (files.length > 1) {
+        alert(`Successfully uploaded ${files.length} images!`);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Error uploading image.");
+      alert("Error uploading image(s).");
     } finally {
       setIsUploading(false);
       if (galleryFileInputRef.current) {
@@ -352,7 +390,7 @@ const Admin = () => {
     if (!newAdminEmail) return;
     
     try {
-      const idToken = await user.getIdToken();
+      const idToken = await auth.currentUser.getIdToken();
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const res = await fetch(`${apiUrl}/api/setAdmin`, {
         method: 'POST',
@@ -368,7 +406,7 @@ const Admin = () => {
       if (res.ok) {
         alert("Admin added successfully!");
         setNewAdminEmail('');
-        fetchAdminsList(user); // refresh list
+        fetchAdminsList(); // refresh list
       } else {
         alert("Failed to add admin: " + data.error);
       }
@@ -384,9 +422,9 @@ const Admin = () => {
       return;
     }
 
-    if (window.confirm(`Are you sure you want to revoke admin access from ${emailToRemove}?`)) {
+    if (window.confirm(`Remove admin privileges from ${emailToRemove}?\n\nThis action cannot be undone automatically.`)) {
       try {
-        const idToken = await user.getIdToken();
+        const idToken = await auth.currentUser.getIdToken();
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
         const res = await fetch(`${apiUrl}/api/removeAdmin`, {
           method: 'POST',
@@ -401,12 +439,64 @@ const Admin = () => {
         
         if (res.ok) {
           alert("Admin access revoked successfully!");
-          fetchAdminsList(user); // refresh list
+          fetchAdminsList(); // refresh list
         } else {
           alert("Failed to remove admin: " + data.error);
         }
       } catch (error) {
         console.error("Error removing admin:", error);
+        alert("Failed to connect to backend server.");
+      }
+    }
+  };
+
+  const handlePromoteAdmin = async (emailToPromote) => {
+    if (window.confirm(`Promote ${emailToPromote} to Super Admin?\n\nSuper Admins can manage admins, promote other users, and modify permissions.`)) {
+      try {
+        const idToken = await auth.currentUser.getIdToken();
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const res = await fetch(`${apiUrl}/api/setSuperAdmin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+          body: JSON.stringify({ email: emailToPromote })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("Admin promoted successfully!");
+          fetchAdminsList();
+        } else {
+          alert("Failed to promote: " + data.error);
+        }
+      } catch (error) {
+        console.error("Error promoting:", error);
+        alert("Failed to connect to backend server.");
+      }
+    }
+  };
+
+  const handleDemoteAdmin = async (emailToDemote) => {
+    if (emailToDemote === user.email) {
+      alert("You cannot demote yourself!");
+      return;
+    }
+    if (window.confirm(`Remove Super Admin privileges from ${emailToDemote}?\n\nThey will remain an Admin but lose permission management capabilities.`)) {
+      try {
+        const idToken = await auth.currentUser.getIdToken();
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const res = await fetch(`${apiUrl}/api/removeSuperAdmin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+          body: JSON.stringify({ email: emailToDemote })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("Super Admin privileges revoked successfully!");
+          fetchAdminsList();
+        } else {
+          alert("Failed to demote: " + data.error);
+        }
+      } catch (error) {
+        console.error("Error demoting:", error);
         alert("Failed to connect to backend server.");
       }
     }
@@ -466,12 +556,14 @@ const Admin = () => {
         >
           Gallery
         </button>
-        <button 
-          className={`admin-tab ${activeTab === 'admins' ? 'active' : ''}`}
-          onClick={() => setActiveTab('admins')}
-        >
-          Manage Admins
-        </button>
+        {(user?.isSuperAdmin || user?.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL) && (
+          <button 
+            className={`admin-tab ${activeTab === 'admins' ? 'active' : ''}`}
+            onClick={() => setActiveTab('admins')}
+          >
+            Manage Admins
+          </button>
+        )}
       </div>
 
       <div className="admin-content">
@@ -615,6 +707,7 @@ const Admin = () => {
                     <input 
                       type="file" 
                       accept="image/*" 
+                      multiple
                       ref={galleryFileInputRef}
                       onChange={handleGalleryImageUpload} 
                       disabled={isUploading}
@@ -654,9 +747,9 @@ const Admin = () => {
                 <h2>Current Gallery</h2>
                 <div className="achievements-list">
                   {galleryItems.map((item) => (
-                    <div key={item.id} className="admin-achievement-card" style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <img src={item.img} alt="Gallery" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} />
-                      <div className="card-info" style={{ flex: 1, marginLeft: '15px' }}>
+                    <div key={item.id} className="admin-achievement-card">
+                      <img src={item.img} alt="Gallery" style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px' }} />
+                      <div className="card-info">
                         <p className="order-badge">Order: {item.order}</p>
                         {item.originalWidth && item.originalHeight ? (
                            <p className="card-desc">Dims: {item.originalWidth}x{item.originalHeight}</p>
@@ -664,7 +757,7 @@ const Admin = () => {
                            <p className="card-desc">Legacy Height: {item.height}px</p>
                         )}
                       </div>
-                      <div className="card-actions" style={{ flexDirection: 'column', marginTop: 0 }}>
+                      <div className="card-actions">
                         <button onClick={() => handleGalleryEdit(item)} className="admin-btn edit">Edit</button>
                         <button onClick={() => handleGalleryDelete(item.id)} className="admin-btn delete">Delete</button>
                       </div>
@@ -677,40 +770,69 @@ const Admin = () => {
           </>
         )}
 
-        {activeTab === 'admins' && (
-          <div className="admin-glass-panel admin-management-panel" style={{ gridColumn: '1 / -1' }}>
-            <h2>Manage Admins</h2>
-            <p style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', marginBottom: '20px'}}>
-              User must sign in to the website at least once before they can be granted admin privileges.
-            </p>
-            <form onSubmit={handleAddAdmin} className="admin-form" style={{ display: 'flex', gap: '15px', marginBottom: '30px', maxWidth: '500px' }}>
-              <input 
-                type="email" 
-                value={newAdminEmail} 
-                onChange={(e) => setNewAdminEmail(e.target.value)} 
-                placeholder="New admin email..." 
-                required 
-                style={{ flex: 1, marginBottom: 0 }}
-              />
-              <button type="submit" className="admin-btn primary" style={{ flex: 'none' }}>Grant Access</button>
-            </form>
-            
-            <div className="admin-users-list" style={{ maxWidth: '800px' }}>
-              {adminList.map(email => (
-                <div key={email} className="admin-user-item">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span>{email}</span>
-                    {email === user.email && (
-                      <span className="you-badge">You</span>
-                    )}
-                  </div>
-                  {email !== user.email && (
-                    <button onClick={() => handleRemoveAdmin(email)} className="admin-btn delete" style={{ padding: '6px 12px', fontSize: '0.85rem' }} title="Revoke access">Revoke</button>
-                  )}
+        {activeTab === 'admins' && (user?.isSuperAdmin || user?.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL) && (
+          <>
+            <div className="admin-glass-panel form-panel">
+              <h2>Grant Admin Access</h2>
+              <p style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', marginBottom: '20px'}}>
+                User must sign in to the website at least once before they can be granted admin privileges.
+              </p>
+              <form onSubmit={handleAddAdmin} className="admin-form">
+                <div className="form-group">
+                  <label>New Admin Email</label>
+                  <input 
+                    type="email" 
+                    value={newAdminEmail} 
+                    onChange={(e) => setNewAdminEmail(e.target.value)} 
+                    placeholder="e.g. user@example.com" 
+                    required 
+                  />
                 </div>
-              ))}
+                <div className="form-actions">
+                  <button type="submit" className="admin-btn primary">Grant Access</button>
+                </div>
+              </form>
             </div>
-          </div>
+
+            <div className="admin-right-column">
+              <div className="admin-glass-panel list-panel" style={{ marginBottom: '30px', height: '100%' }}>
+                <h2>Current Admins</h2>
+                <div className="achievements-list">
+                  {adminList.map(admin => (
+                    <div key={admin.email} className="admin-achievement-card" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div className="card-info" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <h3 style={{ margin: 0 }}>{admin.email}</h3>
+                        {admin.isRoot && (
+                          <span className="you-badge" style={{background: '#ff0055', color: '#fff'}}>Root Super Admin</span>
+                        )}
+                        {!admin.isRoot && admin.isSuperAdmin && (
+                          <span className="you-badge" style={{background: '#ff9900', color: '#000'}}>Super Admin</span>
+                        )}
+                        {!admin.isSuperAdmin && !admin.isRoot && (
+                          <span className="you-badge" style={{background: '#00ccff', color: '#000'}}>Admin</span>
+                        )}
+                        {admin.email === user.email && (
+                          <span className="you-badge">You</span>
+                        )}
+                      </div>
+                      <div className="card-actions" style={{ marginTop: 0, gap: '5px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        {!admin.isRoot && admin.email !== user.email && !admin.isSuperAdmin && (
+                          <button onClick={() => handlePromoteAdmin(admin.email)} className="admin-btn primary" style={{fontSize: '0.8rem'}}>Promote</button>
+                        )}
+                        {!admin.isRoot && admin.email !== user.email && admin.isSuperAdmin && (
+                          <button onClick={() => handleDemoteAdmin(admin.email)} className="admin-btn secondary" style={{fontSize: '0.8rem'}}>Demote</button>
+                        )}
+                        {!admin.isRoot && admin.email !== user.email && (
+                          <button onClick={() => handleRemoveAdmin(admin.email)} className="admin-btn delete" style={{fontSize: '0.8rem'}}>Remove</button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {adminList.length === 0 && <p>No admins found.</p>}
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
