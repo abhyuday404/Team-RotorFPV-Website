@@ -11,3 +11,9 @@
   display: flex;
   flex-direction: column;
 }
+
+@media only screen and (max-width: 768px) {
+  .achievements-page {
+    height: 100dvh; /* Better handling of mobile browser UI */
+  }
+}

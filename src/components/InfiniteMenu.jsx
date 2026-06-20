@@ -948,7 +948,7 @@ export default function InfiniteMenu({ items = [], scale = 1.0 }) {
       <canvas id="infinite-grid-menu-canvas" ref={canvasRef} />
 
       {activeItem && (
-        <>
+        <div className="face-content-wrapper">
           <h2 className={`face-title ${isMoving ? 'inactive' : 'active'}`}>{activeItem.title}</h2>
 
           <p className={`face-description ${isMoving ? 'inactive' : 'active'}`}>{activeItem.description}</p>
@@ -958,7 +958,7 @@ export default function InfiniteMenu({ items = [], scale = 1.0 }) {
               <p className="action-button-icon">&#x2197;</p>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

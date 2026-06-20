@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 import GlassSurface from './GlassSurface';
 import './Navbar.css';
 
@@ -21,6 +22,7 @@ const Navbar = () => {
   const linkRefs = useRef({});
   const [pillStyle, setPillStyle] = useState({ opacity: 0 });
   const [isInitial, setIsInitial] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const updatePill = useCallback(() => {
     const activePath = location.pathname;
@@ -129,8 +131,41 @@ const Navbar = () => {
           <ul className="nav-links right-links">
             {renderLinks(rightLinks)}
           </ul>
+
+          <button className="mobile-menu-btn" onClick={() => setMenuOpen(!menuOpen)}>
+            {menuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
         </div>
       </GlassSurface>
+
+      {/* Mobile Dropdown Menu */}
+      <div className={`mobile-dropdown ${menuOpen ? 'open' : ''}`}>
+        <GlassSurface
+          width="100%"
+          height="100%"
+          borderRadius={20}
+          brightness={50}
+          opacity={0.95}
+          blur={15}
+          backgroundOpacity={0.2}
+          saturation={1.2}
+          className="mobile-dropdown-glass"
+        >
+          <ul className="mobile-nav-links">
+            {allLinks.map((link) => (
+              <li key={link.path}>
+                <Link
+                  to={link.path}
+                  className={location.pathname === link.path ? 'active' : ''}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {link.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </GlassSurface>
+      </div>
     </nav>
   );
 };

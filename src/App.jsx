@@ -12,7 +12,7 @@ import MobileOverlay from './components/MobileOverlay';
 function App() {
   return (
     <Router>
-      <MobileOverlay />
+      {false && <MobileOverlay />}
       <div className="app-background">
         <Silk
           speed={3.7}
