@@ -17,13 +17,9 @@
   box-sizing: border-box;
 }
 
-html {
-  background-color: var(--bg-primary);
-}
-
 body {
   font-family: 'Inter', sans-serif;
-  background-color: var(--bg-primary);
+  background-color: transparent;
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;
