@@ -41,10 +41,15 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like server-to-server or curl)
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+    
+    // Allow dynamic Vercel preview URLs (e.g., https://project-123.vercel.app)
+    if (origin.startsWith('https://') && origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    callback(new Error('Not allowed by CORS'));
   }
 }));
 
