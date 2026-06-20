@@ -156,6 +156,7 @@ app.post('/api/setAdmin', verifySuperAdmin, async (req, res) => {
     const userRecord = await getAuth().getUserByEmail(email);
     const isSuper = userRecord.customClaims?.superAdmin === true;
     await getAuth().setCustomUserClaims(userRecord.uid, { admin: true, superAdmin: isSuper });
+    await db.collection('admins').doc(email).set({ email, isSuperAdmin: isSuper, isRoot: email === process.env.SUPER_ADMIN_EMAIL }, { merge: true });
     await logAudit('granted admin to', req.user.email, email);
     res.json({ message: `Successfully granted admin privileges to ${email}` });
   } catch (error) {
@@ -180,15 +181,15 @@ app.post('/api/removeAdmin', verifySuperAdmin, async (req, res) => {
   try {
     const userRecord = await getAuth().getUserByEmail(email);
     if (userRecord.customClaims?.superAdmin === true) {
-      const listUsersResult = await getAuth().listUsers(1000);
-      const superAdmins = listUsersResult.users.filter(u => u.customClaims?.superAdmin === true);
-      if (superAdmins.length <= 1 && req.user.email !== process.env.SUPER_ADMIN_EMAIL) {
+      const adminsSnapshot = await db.collection('admins').where('isSuperAdmin', '==', true).get();
+      if (adminsSnapshot.size <= 1 && req.user.email !== process.env.SUPER_ADMIN_EMAIL) {
          return res.status(400).json({ error: 'At least one Super Admin must remain.' });
       }
     }
 
     await getAuth().setCustomUserClaims(userRecord.uid, { admin: false, superAdmin: false });
     await getAuth().revokeRefreshTokens(userRecord.uid);
+    await db.collection('admins').doc(email).delete();
     await logAudit('revoked admin from', req.user.email, email);
     res.json({ message: `Successfully revoked admin privileges from ${email}` });
   } catch (error) {
@@ -205,6 +206,7 @@ app.post('/api/setSuperAdmin', verifySuperAdmin, async (req, res) => {
   try {
     const userRecord = await getAuth().getUserByEmail(email);
     await getAuth().setCustomUserClaims(userRecord.uid, { admin: true, superAdmin: true });
+    await db.collection('admins').doc(email).set({ email, isSuperAdmin: true, isRoot: email === process.env.SUPER_ADMIN_EMAIL }, { merge: true });
     await logAudit('promoted to super admin', req.user.email, email);
     res.json({ message: `Successfully promoted ${email} to Super Admin` });
   } catch (error) {
@@ -227,15 +229,15 @@ app.post('/api/removeSuperAdmin', verifySuperAdmin, async (req, res) => {
   }
 
   try {
-    const listUsersResult = await getAuth().listUsers(1000);
-    const superAdmins = listUsersResult.users.filter(u => u.customClaims?.superAdmin === true);
-    if (superAdmins.length <= 1 && req.user.email !== process.env.SUPER_ADMIN_EMAIL) {
+    const adminsSnapshot = await db.collection('admins').where('isSuperAdmin', '==', true).get();
+    if (adminsSnapshot.size <= 1 && req.user.email !== process.env.SUPER_ADMIN_EMAIL) {
        return res.status(400).json({ error: 'At least one Super Admin must remain.' });
     }
 
     const userRecord = await getAuth().getUserByEmail(email);
     await getAuth().setCustomUserClaims(userRecord.uid, { admin: true, superAdmin: false });
     await getAuth().revokeRefreshTokens(userRecord.uid);
+    await db.collection('admins').doc(email).set({ isSuperAdmin: false }, { merge: true });
     await logAudit('demoted from super admin', req.user.email, email);
     res.json({ message: `Successfully demoted ${email} to regular Admin` });
   } catch (error) {
@@ -247,6 +249,15 @@ app.post('/api/removeSuperAdmin', verifySuperAdmin, async (req, res) => {
 // Endpoint to list all admins (optional utility)
 app.get('/api/admins', verifyAdmin, async (req, res) => {
   try {
+    const adminsSnapshot = await db.collection('admins').get();
+    
+    if (!adminsSnapshot.empty) {
+      const admins = [];
+      adminsSnapshot.forEach(doc => admins.push(doc.data()));
+      return res.json({ admins });
+    }
+
+    // Fallback/Migration: If collection is empty, migrate from Firebase Auth
     const listUsersResult = await getAuth().listUsers(1000);
     const admins = listUsersResult.users
       .filter(user => user.customClaims && user.customClaims.admin === true)
@@ -255,6 +266,16 @@ app.get('/api/admins', verifyAdmin, async (req, res) => {
          isSuperAdmin: user.customClaims.superAdmin === true || user.email === process.env.SUPER_ADMIN_EMAIL,
          isRoot: user.email === process.env.SUPER_ADMIN_EMAIL
       }));
+      
+    // Populate the Firestore collection for future fast reads
+    if (admins.length > 0) {
+      const batch = db.batch();
+      admins.forEach(admin => {
+        const docRef = db.collection('admins').doc(admin.email);
+        batch.set(docRef, admin);
+      });
+      await batch.commit();
+    }
       
     res.json({ admins });
   } catch (error) {
