@@ -71,7 +71,7 @@ const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10 MB
+    fileSize: 30 * 1024 * 1024, // 30 MB
   },
   fileFilter: (req, file, cb) => {
     const ext = file.originalname ? file.originalname.split('.').pop().toLowerCase() : '';
@@ -321,7 +321,7 @@ app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) =>
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ error: 'File too large. Maximum size is 10 MB.' });
+      return res.status(413).json({ error: 'File too large. Maximum size is 30 MB.' });
     }
     return res.status(400).json({ error: err.message });
   }

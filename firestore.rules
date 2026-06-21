@@ -17,6 +17,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Deny everything else by default.
     // Any new collection must have explicit rules added above.
     match /{document=**} {

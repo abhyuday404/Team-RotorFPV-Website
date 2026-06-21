@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import './Admin.css';
@@ -14,6 +14,9 @@ const Admin = () => {
   const fileInputRef = useRef(null);
   const galleryFileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('achievements');
+  const [galleryHeroUrl, setGalleryHeroUrl] = useState('');
+  const [isUploadingHero, setIsUploadingHero] = useState(false);
+  const heroFileInputRef = useRef(null);
   
   // List of current admins fetched from our backend
   const [adminList, setAdminList] = useState([]);
@@ -90,6 +93,13 @@ const Admin = () => {
             console.error("Error fetching admin gallery:", error);
             setLoading(false);
           }));
+
+          const heroUnsubscribe = onSnapshot(doc(db, 'settings', 'gallery'), (docSnap) => {
+            if (docSnap.exists() && docSnap.data().heroImageUrl) {
+              setGalleryHeroUrl(docSnap.data().heroImageUrl);
+            }
+          });
+          firestoreUnsubscribes.push(heroUnsubscribe);
           
           fetchAdminsList();
         } else {
@@ -146,6 +156,36 @@ const Admin = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleHeroImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsUploadingHero(true);
+    const data = new FormData();
+    data.append("image", file);
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/upload`, {
+        method: "POST",
+        headers: { 'Authorization': `Bearer ${idToken}` },
+        body: data,
+      });
+      const uploadedImage = await response.json();
+      if (response.ok && uploadedImage.secure_url) {
+        await setDoc(doc(db, 'settings', 'gallery'), { heroImageUrl: uploadedImage.secure_url }, { merge: true });
+        alert("Gallery Hero Image updated successfully!");
+      } else {
+        alert(uploadedImage.error || "Upload failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Error uploading image.");
+    } finally {
+      setIsUploadingHero(false);
+      if (heroFileInputRef.current) heroFileInputRef.current.value = '';
+    }
   };
 
   const handleImageUpload = async (e) => {
@@ -569,6 +609,32 @@ const Admin = () => {
       <div className="admin-content">
         {activeTab === 'achievements' && (
           <>
+            <div className="admin-glass-panel form-panel" style={{ marginBottom: '20px' }}>
+              <h2>Gallery Scroll Animation Image</h2>
+              <div className="form-group">
+                <label>Current Image</label>
+                {galleryHeroUrl ? (
+                  <div style={{ marginBottom: '10px', border: '1px solid rgba(255,255,255,0.1)', padding: '5px', borderRadius: '5px', display: 'inline-block' }}>
+                    <img src={galleryHeroUrl} alt="Gallery Hero" style={{ height: '100px', borderRadius: '4px', objectFit: 'cover' }} />
+                  </div>
+                ) : (
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Using default image</p>
+                )}
+                <label>Upload New Image</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input 
+                    type="file" 
+                    accept="image/*,.heic,.heif" 
+                    ref={heroFileInputRef}
+                    onChange={handleHeroImageUpload} 
+                    disabled={isUploadingHero}
+                    style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}
+                  />
+                  {isUploadingHero && <span style={{ color: '#00fff5', fontSize: '0.9rem' }}>Uploading...</span>}
+                </div>
+              </div>
+            </div>
+
             <div className="admin-glass-panel form-panel">
               <h2>{editingId ? 'Edit Achievement' : 'Add New Achievement'}</h2>
               <form onSubmit={handleSubmit} className="admin-form">

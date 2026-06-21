@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 
 import TiltedCard from './TiltedCard';
@@ -59,7 +59,8 @@ const Masonry = ({
   hoverScale = 0.95,
   blurToFocus = true,
   colorShiftOnHover = false,
-  onImageClick
+  onImageClick,
+  onLayoutComplete
 }) => {
   const columns = useMedia(
     ['(min-width:1500px)', '(min-width:1000px)', '(min-width:769px)'],
@@ -128,6 +129,12 @@ const Masonry = ({
 
     return { grid: gridItems, containerHeight: Math.max(...colHeights) };
   }, [columns, items, width]);
+
+  useEffect(() => {
+    if (onLayoutComplete && containerHeight > 0 && imagesReady) {
+      onLayoutComplete();
+    }
+  }, [containerHeight, imagesReady, onLayoutComplete]);
 
   const hasMounted = useRef(false);
 
@@ -223,7 +230,7 @@ const Masonry = ({
   };
 
   return (
-    <div ref={containerRef} className="list" style={{ height: containerHeight }}>
+    <div ref={containerRef} className="list" style={{ height: `${containerHeight}px` }}>
       {imagesReady && grid.map(item => {
         return (
           <div
@@ -274,4 +281,4 @@ const Masonry = ({
   );
 };
 
-export default Masonry;
+export default memo(Masonry);
