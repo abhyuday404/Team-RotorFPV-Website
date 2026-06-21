@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import './Admin.css';
@@ -17,6 +17,23 @@ const Admin = () => {
   const [galleryHeroUrl, setGalleryHeroUrl] = useState('');
   const [isUploadingHero, setIsUploadingHero] = useState(false);
   const heroFileInputRef = useRef(null);
+  
+  // Team Space State
+  const [teamYears, setTeamYears] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [selectedTeamYear, setSelectedTeamYear] = useState('');
+  const [newTeamYear, setNewTeamYear] = useState('');
+  const [editingTeamMemberId, setEditingTeamMemberId] = useState(null);
+  const teamMemberFileInputRef = useRef(null);
+  const [teamMemberFormData, setTeamMemberFormData] = useState({
+    name: '',
+    role: '',
+    image: '',
+    linkedin: '',
+    category: 'leaders',
+    order: 0,
+    isActive: true
+  });
   
   // List of current admins fetched from our backend
   const [adminList, setAdminList] = useState([]);
@@ -100,6 +117,28 @@ const Admin = () => {
             }
           });
           firestoreUnsubscribes.push(heroUnsubscribe);
+
+          const qTeamYears = query(collection(db, 'team_years'), orderBy('year', 'desc'));
+          firestoreUnsubscribes.push(onSnapshot(qTeamYears, (snapshot) => {
+            const data = snapshot.docs.map(doc => doc.data().year);
+            setTeamYears(data);
+            if (data.length > 0) {
+              setSelectedTeamYear(prev => prev || data[0]);
+            }
+          }, (error) => {
+            console.error("Error fetching team years:", error);
+          }));
+
+          const qTeamMembers = query(collection(db, 'team_members'), orderBy('order', 'asc'));
+          firestoreUnsubscribes.push(onSnapshot(qTeamMembers, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            setTeamMembers(data);
+          }, (error) => {
+            console.error("Error fetching team members:", error);
+          }));
           
           fetchAdminsList();
         } else {
@@ -542,6 +581,138 @@ const Admin = () => {
     }
   };
 
+  // --- Team Space Handlers ---
+  const handleAddYear = async (e) => {
+    e.preventDefault();
+    if (!newTeamYear.trim()) return;
+    try {
+      await setDoc(doc(db, 'team_years', newTeamYear.trim()), {
+        year: newTeamYear.trim(),
+        createdAt: serverTimestamp()
+      });
+      setNewTeamYear('');
+      setSelectedTeamYear(newTeamYear.trim());
+    } catch (error) {
+      console.error("Add Year Error:", error);
+      alert("Failed to add year. " + error.message);
+    }
+  };
+
+  const handleDeleteYear = async (year) => {
+    if (window.confirm(`Are you sure you want to delete the year ${year}? This does NOT delete the members in this year automatically.`)) {
+      try {
+        await deleteDoc(doc(db, 'team_years', year));
+        if (selectedTeamYear === year) {
+           setSelectedTeamYear(teamYears.filter(y => y !== year)[0] || '');
+        }
+      } catch (error) {
+        console.error("Delete Year Error:", error);
+        alert("Failed to delete year.");
+      }
+    }
+  };
+
+  const handleTeamMemberInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setTeamMemberFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const resetTeamMemberForm = () => {
+    setTeamMemberFormData({ name: '', role: '', image: '', linkedin: '', category: 'leaders', order: 0, isActive: true });
+    setEditingTeamMemberId(null);
+  };
+
+  const handleTeamMemberEdit = (item) => {
+    setEditingTeamMemberId(item.id);
+    setTeamMemberFormData({
+      name: item.name || '',
+      role: item.role || '',
+      image: item.image || '',
+      linkedin: item.linkedin || '',
+      category: item.category || 'leaders',
+      order: item.order || 0,
+      isActive: item.isActive !== false // default to true if undefined
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTeamMemberDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this team member?")) {
+      try {
+        await deleteDoc(doc(db, 'team_members', id));
+      } catch (error) {
+        console.error("Delete Error:", error);
+        alert("Failed to delete team member.");
+      }
+    }
+  };
+
+  const handleTeamMemberSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedTeamYear) {
+       alert("Please select a year first.");
+       return;
+    }
+    const dataToSave = {
+      year: selectedTeamYear,
+      name: teamMemberFormData.name,
+      role: teamMemberFormData.role,
+      image: teamMemberFormData.image,
+      linkedin: teamMemberFormData.linkedin,
+      category: teamMemberFormData.category,
+      order: Number(teamMemberFormData.order),
+      isActive: teamMemberFormData.isActive,
+      updatedAt: serverTimestamp()
+    };
+
+    try {
+      if (editingTeamMemberId) {
+        await updateDoc(doc(db, 'team_members', editingTeamMemberId), dataToSave);
+      } else {
+        dataToSave.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'team_members'), dataToSave);
+      }
+      resetTeamMemberForm();
+    } catch (error) {
+      console.error("Save Error:", error);
+      alert("Failed to save team member.");
+    }
+  };
+
+  const handleTeamMemberImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const data = new FormData();
+    data.append("image", file);
+
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/upload`, {
+        method: "POST",
+        headers: { 'Authorization': `Bearer ${idToken}` },
+        body: data,
+      });
+      const uploadedImage = await response.json();
+      if (response.ok && uploadedImage.secure_url) {
+        setTeamMemberFormData(prev => ({ ...prev, image: uploadedImage.secure_url }));
+      } else {
+        alert(uploadedImage.error || "Upload failed.");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Error uploading image.");
+    } finally {
+      setIsUploading(false);
+      if (teamMemberFileInputRef.current) teamMemberFileInputRef.current.value = '';
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-container flex-center">
@@ -599,6 +770,12 @@ const Admin = () => {
           onClick={() => setActiveTab('gallery')}
         >
           Gallery
+        </button>
+        <button
+          className={`admin-tab ${activeTab === 'team' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('team'); resetTeamMemberForm(); }}
+        >
+          Team Space
         </button>
         {(user?.isSuperAdmin) && (
           <button
@@ -843,6 +1020,191 @@ const Admin = () => {
                   ))}
                   {galleryItems.length === 0 && <p className="empty-state">No gallery images yet.</p>}
                 </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'team' && (
+          <>
+            <div className="admin-left-column">
+              <div className="admin-glass-panel form-panel">
+                <h2>Manage Years</h2>
+                <form onSubmit={handleAddYear} className="admin-form inline-form">
+                  <input
+                    type="text"
+                    value={newTeamYear}
+                    onChange={(e) => setNewTeamYear(e.target.value)}
+                    placeholder="e.g. 2026"
+                    required
+                  />
+                  <button type="submit" className="admin-btn primary small">Add Year</button>
+                </form>
+                <div className="year-pills">
+                  {teamYears.map(year => (
+                    <div key={year} className={`year-pill ${selectedTeamYear === year ? 'active' : ''}`}>
+                      <span onClick={() => { setSelectedTeamYear(year); resetTeamMemberForm(); }}>{year}</span>
+                      <button onClick={() => handleDeleteYear(year)} className="delete-year-btn">×</button>
+                    </div>
+                  ))}
+                  {teamYears.length === 0 && <span className="empty-text">No years created yet.</span>}
+                </div>
+              </div>
+
+              {selectedTeamYear && (
+                <div className="admin-glass-panel form-panel">
+                  <h2>{editingTeamMemberId ? `Edit Member (${selectedTeamYear})` : `Add Member (${selectedTeamYear})`}</h2>
+                  <form onSubmit={handleTeamMemberSubmit} className="admin-form">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Name</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={teamMemberFormData.name}
+                          onChange={handleTeamMemberInputChange}
+                          required
+                          placeholder="e.g. John Doe"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Category</label>
+                        <select
+                          name="category"
+                          value={teamMemberFormData.category}
+                          onChange={handleTeamMemberInputChange}
+                          required
+                        >
+                          <option value="leaders">Leaders</option>
+                          <option value="technical">Technical</option>
+                          <option value="miscellaneous">Miscellaneous</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Role</label>
+                        <input
+                          type="text"
+                          name="role"
+                          value={teamMemberFormData.role}
+                          onChange={handleTeamMemberInputChange}
+                          required
+                          placeholder="e.g. CAPTAIN"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Order</label>
+                        <input
+                          type="number"
+                          name="order"
+                          value={teamMemberFormData.order}
+                          onChange={handleTeamMemberInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>LinkedIn URL</label>
+                      <input
+                        type="url"
+                        name="linkedin"
+                        value={teamMemberFormData.linkedin}
+                        onChange={handleTeamMemberInputChange}
+                        placeholder="https://linkedin.com/in/..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Image</label>
+                      <div className="file-upload">
+                        <input
+                          type="file"
+                          accept="image/*,.heic,.heif"
+                          ref={teamMemberFileInputRef}
+                          onChange={handleTeamMemberImageUpload}
+                          disabled={isUploading}
+                        />
+                        {isUploading && <span className="upload-status">Uploading…</span>}
+                      </div>
+                      <div className="input-divider">or</div>
+                      <input
+                        type="text"
+                        name="image"
+                        value={teamMemberFormData.image}
+                        onChange={handleTeamMemberInputChange}
+                        placeholder="Paste an image URL directly"
+                        required
+                      />
+                      {teamMemberFormData.image && (
+                        <div className="image-preview achievement">
+                          <img src={teamMemberFormData.image} alt="Preview" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="isActive"
+                          checked={teamMemberFormData.isActive}
+                          onChange={handleTeamMemberInputChange}
+                        />
+                        Active (visible on website)
+                      </label>
+                    </div>
+
+                    <div className="form-actions">
+                      {editingTeamMemberId && (
+                        <button type="button" onClick={resetTeamMemberForm} className="admin-btn cancel">
+                          Cancel
+                        </button>
+                      )}
+                      <button type="submit" className="admin-btn primary">
+                        {editingTeamMemberId ? 'Update Member' : 'Add Member'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+
+            <div className="admin-right-column">
+              <div className="admin-glass-panel list-panel">
+                <h2>Members in {selectedTeamYear || '...'}</h2>
+                {['leaders', 'technical', 'miscellaneous'].map(category => {
+                  const categoryMembers = teamMembers.filter(m => m.year === selectedTeamYear && m.category === category);
+                  if (categoryMembers.length === 0) return null;
+                  
+                  return (
+                    <div key={category} className="team-category-section">
+                      <h3 className="category-title">{category.charAt(0).toUpperCase() + category.slice(1)}</h3>
+                      <div className="achievements-list">
+                        {categoryMembers.map(member => (
+                          <div key={member.id} className={`admin-achievement-card ${!member.isActive ? 'inactive-member' : ''}`}>
+                            <div className="card-info">
+                              <h3>{member.name} <span className={`status-badge ${member.isActive ? 'active' : 'inactive'}`}>{member.isActive ? 'Active' : 'Inactive'}</span></h3>
+                              <span className="order-badge">Role: {member.role} | Order: {member.order}</span>
+                            </div>
+                            <div className="card-actions">
+                              <button onClick={() => handleTeamMemberEdit(member)} className="admin-btn edit small">Edit</button>
+                              <button onClick={() => handleTeamMemberDelete(member.id)} className="admin-btn delete small">Delete</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {selectedTeamYear && teamMembers.filter(m => m.year === selectedTeamYear).length === 0 && (
+                  <p className="empty-state">No members found for this year.</p>
+                )}
+                {!selectedTeamYear && (
+                  <p className="empty-state">Select a year to view members.</p>
+                )}
               </div>
             </div>
           </>

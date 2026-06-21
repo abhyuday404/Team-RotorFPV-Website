@@ -24,7 +24,7 @@ import TiltedCard from './TiltedCard';
   scaleOnHover={1.2}
   showMobileWarning={false}
   showTooltip={false}
-  displayOverlayContent={false}
+  displayOverlayContent={true}
   overlayContent={
     <p className="tilted-card-demo-text">
       Kendrick Lamar - GNX
