@@ -35,7 +35,7 @@ const Achievements = () => {
   }
 
   const menuItems = achievements.map((item) => ({
-    image: item.images?.[0] || '/TRFPV Assets/JUSTLOGO.png',
+    image: item.images?.[0] || '/TRFPV_Assets/JUSTLOGO.png',
     title: item.title,
     description: item.description,
     link: ''

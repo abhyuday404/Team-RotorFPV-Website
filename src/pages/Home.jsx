@@ -9,7 +9,7 @@ const Home = () => {
     <div className="home-container" ref={containerRef}>
       <div className="video-background">
         <video autoPlay loop muted playsInline>
-          <source src="/TRFPV Assets/Teamvideo.mp4" type="video/mp4" />
+          <source src="/TRFPV_Assets/Teamvideo.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
         <div className="video-overlay"></div>

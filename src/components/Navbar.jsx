@@ -125,7 +125,7 @@ const Navbar = () => {
           </ul>
 
           <Link to="/" className="nav-logo">
-            <img src="/TRFPV Assets/JUSTLOGO.png" alt="RotorFPV Logo" className="logo-img" />
+            <img src="/TRFPV_Assets/JUSTLOGO.png" alt="RotorFPV Logo" className="logo-img" />
           </Link>
 
           <ul className="nav-links right-links">
