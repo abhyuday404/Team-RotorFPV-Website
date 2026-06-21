@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 
+import TiltedCard from './TiltedCard';
 import './Masonry.css';
 
 const useMedia = (queries, values, defaultValue) => {
@@ -234,24 +235,38 @@ const Masonry = ({
             onClick={() => onImageClick && onImageClick(item)}
             style={{ cursor: onImageClick ? 'pointer' : 'default' }}
           >
-            <div className="item-img" style={{ backgroundImage: `url(${item.img})` }}>
-              {colorShiftOnHover && (
-                <div
-                  className="color-overlay"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    background: 'linear-gradient(45deg, rgba(255,0,150,0.5), rgba(0,150,255,0.5))',
-                    opacity: 0,
-                    pointerEvents: 'none',
-                    borderRadius: '8px'
-                  }}
-                />
-              )}
-            </div>
+            <TiltedCard
+              imageSrc={item.img}
+              altText="Gallery Image"
+              captionText=""
+              containerHeight="100%"
+              containerWidth="100%"
+              imageHeight="100%"
+              imageWidth="100%"
+              rotateAmplitude={12}
+              scaleOnHover={1.05}
+              showMobileWarning={false}
+              showTooltip={false}
+              displayOverlayContent={colorShiftOnHover}
+              overlayContent={
+                colorShiftOnHover ? (
+                  <div
+                    className="color-overlay"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(45deg, rgba(255,0,150,0.5), rgba(0,150,255,0.5))',
+                      opacity: 0,
+                      pointerEvents: 'none',
+                      borderRadius: '8px'
+                    }}
+                  />
+                ) : null
+              }
+            />
           </div>
         );
       })}
