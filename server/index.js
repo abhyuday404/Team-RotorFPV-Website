@@ -313,7 +313,7 @@ app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) =>
     });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Upload failed' });
+    res.status(500).json({ error: error.message || 'Upload failed' });
   }
 });
 
