@@ -32,10 +32,8 @@ const Gallery = () => {
         scrollTrigger: {
           trigger: wrapperRef.current,
           start: 'top top',
-          end: '+=400vh',
+          end: '+=100vh',
           scrub: true,
-          pin: true,
-          anticipatePin: 1,
         }
       });
 
