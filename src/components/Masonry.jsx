@@ -71,35 +71,7 @@ const Masonry = ({
   const [containerRef, { width }] = useMeasure();
   const [imagesReady, setImagesReady] = useState(false);
 
-  const getInitialPosition = item => {
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    if (!containerRect) return { x: item.x, y: item.y };
 
-    let direction = animateFrom;
-
-    if (animateFrom === 'random') {
-      const directions = ['top', 'bottom', 'left', 'right'];
-      direction = directions[Math.floor(Math.random() * directions.length)];
-    }
-
-    switch (direction) {
-      case 'top':
-        return { x: item.x, y: -200 };
-      case 'bottom':
-        return { x: item.x, y: window.innerHeight + 200 };
-      case 'left':
-        return { x: -200, y: item.y };
-      case 'right':
-        return { x: window.innerWidth + 200, y: item.y };
-      case 'center':
-        return {
-          x: containerRect.width / 2 - item.w / 2,
-          y: containerRect.height / 2 - item.h / 2
-        };
-      default:
-        return { x: item.x, y: item.y + 100 };
-    }
-  };
 
   useEffect(() => {
     preloadImages(items.map(i => i.img)).then(() => setImagesReady(true));
@@ -151,23 +123,10 @@ const Masonry = ({
       };
 
       if (!hasMounted.current) {
-        const initialPos = getInitialPosition(item, index);
-        const initialState = {
-          opacity: 0,
-          x: initialPos.x,
-          y: initialPos.y,
-          width: item.w,
-          height: item.h,
-          ...(blurToFocus && { filter: 'blur(10px)' })
-        };
-
-        gsap.fromTo(selector, initialState, {
+        gsap.set(selector, {
           opacity: 1,
           ...animationProps,
-          ...(blurToFocus && { filter: 'blur(0px)' }),
-          duration: 0.8,
-          ease: 'power3.out',
-          delay: index * stagger
+          ...(blurToFocus && { filter: 'blur(0px)' })
         });
       } else {
         gsap.to(selector, {

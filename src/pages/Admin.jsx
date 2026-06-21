@@ -319,9 +319,8 @@ const Admin = () => {
         const uploadedImage = await response.json();
 
         if (response.ok && uploadedImage.secure_url) {
-          // Instead of just setting form data, if they select multiple files,
-          // we should automatically save each one directly to Firestore to save them time!
-          if (files.length > 1 || editingGalleryId === null) {
+          if (files.length > 1) {
+            // If multiple files, auto-add them because the form can only hold one
             const dataToSave = {
               img: uploadedImage.secure_url,
               order: Number(galleryFormData.order),
@@ -331,7 +330,7 @@ const Admin = () => {
             };
             await addDoc(collection(db, 'gallery'), dataToSave);
           } else {
-            // If they just selected 1 file and might be editing, just populate the form
+            // For a single file, just populate the form so the user can submit manually
             setGalleryFormData(prev => ({ 
               ...prev, 
               imgUrl: uploadedImage.secure_url,
@@ -615,34 +614,6 @@ const Admin = () => {
           <>
             <div className="admin-left-column">
               <div className="admin-glass-panel form-panel">
-                <h2>Gallery Scroll Animation Image</h2>
-                <div className="hero-image-manager">
-                  <span className="field-label">Current Image</span>
-                  {galleryHeroUrl ? (
-                    <div className="image-preview hero block">
-                      <img src={galleryHeroUrl} alt="Gallery Hero" />
-                    </div>
-                  ) : (
-                    <div className="image-preview-placeholder">Using default image</div>
-                  )}
-
-                  <div className="hero-upload">
-                    <span className="field-label">Upload New Image</span>
-                    <div className="file-upload">
-                      <input
-                        type="file"
-                        accept="image/*,.heic,.heif"
-                        ref={heroFileInputRef}
-                        onChange={handleHeroImageUpload}
-                        disabled={isUploadingHero}
-                      />
-                      {isUploadingHero && <span className="upload-status">Uploading…</span>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="admin-glass-panel form-panel">
                 <h2>{editingId ? 'Edit Achievement' : 'Add New Achievement'}</h2>
                 <form onSubmit={handleSubmit} className="admin-form">
 
@@ -762,6 +733,34 @@ const Admin = () => {
         {activeTab === 'gallery' && (
           <>
             <div className="admin-left-column">
+              <div className="admin-glass-panel form-panel">
+                <h2>Gallery Scroll Animation Image</h2>
+                <div className="hero-image-manager">
+                  <span className="field-label">Current Image</span>
+                  {galleryHeroUrl ? (
+                    <div className="image-preview hero block">
+                      <img src={galleryHeroUrl} alt="Gallery Hero" />
+                    </div>
+                  ) : (
+                    <div className="image-preview-placeholder">Using default image</div>
+                  )}
+
+                  <div className="hero-upload">
+                    <span className="field-label">Upload New Image</span>
+                    <div className="file-upload">
+                      <input
+                        type="file"
+                        accept="image/*,.heic,.heif"
+                        ref={heroFileInputRef}
+                        onChange={handleHeroImageUpload}
+                        disabled={isUploadingHero}
+                      />
+                      {isUploadingHero && <span className="upload-status">Uploading…</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="admin-glass-panel form-panel">
                 <h2>{editingGalleryId ? 'Edit Gallery Image' : 'Add New Gallery Image'}</h2>
                 <form onSubmit={handleGallerySubmit} className="admin-form">
