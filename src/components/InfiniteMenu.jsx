@@ -295,7 +295,7 @@ function createProgram(gl, shaderSources, transformFeedbackVaryings, attribLocat
   return null;
 }
 
-function makeVertexArray(gl, bufLocNumElmPairs, indices) {
+function makeVertexArray(gl, bufLocNumElmPairs, indices, buffersToTrack) {
   const va = gl.createVertexArray();
   gl.bindVertexArray(va);
 
@@ -308,6 +308,7 @@ function makeVertexArray(gl, bufLocNumElmPairs, indices) {
 
   if (indices) {
     const indexBuffer = gl.createBuffer();
+    if (buffersToTrack) buffersToTrack.push(indexBuffer);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
   }
@@ -328,8 +329,9 @@ function resizeCanvasToDisplaySize(canvas) {
   return needResize;
 }
 
-function makeBuffer(gl, sizeOrData, usage) {
+function makeBuffer(gl, sizeOrData, usage, buffersToTrack) {
   const buf = gl.createBuffer();
+  if (buffersToTrack) buffersToTrack.push(buf);
   gl.bindBuffer(gl.ARRAY_BUFFER, buf);
   gl.bufferData(gl.ARRAY_BUFFER, sizeOrData, usage);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -531,6 +533,7 @@ class InfiniteGridMenu {
     this.onMovementChange = onMovementChange || (() => {});
     this.scaleFactor = scale;
     this.camera.position[2] = 3 * scale;
+    this.buffers = [];
     this.#init(onInit);
   }
 
@@ -561,12 +564,65 @@ class InfiniteGridMenu {
   }
 
   destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
+
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
     if (this.control) {
       this.control.destroy();
+      this.control = null;
     }
+
+    const gl = this.gl;
+    if (gl) {
+      if (this.discVAO) {
+        gl.deleteVertexArray(this.discVAO);
+        this.discVAO = null;
+      }
+
+      if (this.buffers) {
+        this.buffers.forEach(buffer => {
+          gl.deleteBuffer(buffer);
+        });
+        this.buffers = [];
+      }
+
+      if (this.tex) {
+        gl.deleteTexture(this.tex);
+        this.tex = null;
+      }
+
+      if (this.discProgram) {
+        const shaders = gl.getAttachedShaders(this.discProgram);
+        if (shaders) {
+          shaders.forEach(shader => {
+            gl.detachShader(this.discProgram, shader);
+            gl.deleteShader(shader);
+          });
+        }
+        gl.deleteProgram(this.discProgram);
+        this.discProgram = null;
+      }
+
+      const ext = gl.getExtension("WEBGL_lose_context");
+      if (ext) {
+        ext.loseContext();
+      }
+
+      this.gl = null;
+    }
+
+    this.canvas = null;
+    this.items = null;
+    this.onActiveItemChange = null;
+    this.onMovementChange = null;
+    this.discLocations = null;
+    this.discGeo = null;
+    this.discBuffers = null;
+    this.discInstances = null;
   }
 
   #init(onInit) {
@@ -608,10 +664,11 @@ class InfiniteGridMenu {
     this.discVAO = makeVertexArray(
       gl,
       [
-        [makeBuffer(gl, this.discBuffers.vertices, gl.STATIC_DRAW), this.discLocations.aModelPosition, 3],
-        [makeBuffer(gl, this.discBuffers.uvs, gl.STATIC_DRAW), this.discLocations.aModelUvs, 2]
+        [makeBuffer(gl, this.discBuffers.vertices, gl.STATIC_DRAW, this.buffers), this.discLocations.aModelPosition, 3],
+        [makeBuffer(gl, this.discBuffers.uvs, gl.STATIC_DRAW, this.buffers), this.discLocations.aModelUvs, 2]
       ],
-      this.discBuffers.indices
+      this.discBuffers.indices,
+      this.buffers
     );
 
     this.icoGeo = new IcosahedronGeometry();
@@ -656,6 +713,7 @@ class InfiniteGridMenu {
           })
       )
     ).then(images => {
+      if (this.destroyed || !this.gl || !this.items) return;
       images.forEach((img, i) => {
         const x = (i % this.atlasSize) * cellSize;
         const y = Math.floor(i / this.atlasSize) * cellSize;
@@ -709,10 +767,12 @@ class InfiniteGridMenu {
 
   #initDiscInstances(count) {
     const gl = this.gl;
+    const buffer = gl.createBuffer();
+    this.buffers.push(buffer);
     this.discInstances = {
       matricesArray: new Float32Array(count * 16),
       matrices: [],
-      buffer: gl.createBuffer()
+      buffer: buffer
     };
     for (let i = 0; i < count; ++i) {
       const instanceMatrixArray = new Float32Array(this.discInstances.matricesArray.buffer, i * 16 * 4, 16);
@@ -893,17 +953,30 @@ const defaultItems = [
 ];
 
 export default function InfiniteMenu({ items = [], scale = 1.0 }) {
-  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const activeIndexRef = useRef(null);
   const [activeItem, setActiveItem] = useState(null);
   const [isMoving, setIsMoving] = useState(false);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'infinite-grid-menu-canvas';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    container.insertBefore(canvas, container.firstChild);
+
     let sketch;
 
     const handleActiveItem = index => {
       const itemIndex = index % items.length;
-      setActiveItem(items[itemIndex]);
+      if (activeIndexRef.current !== itemIndex) {
+        activeIndexRef.current = itemIndex;
+        setActiveItem(items[itemIndex]);
+      }
     };
 
     if (canvas) {
@@ -931,6 +1004,9 @@ export default function InfiniteMenu({ items = [], scale = 1.0 }) {
       if (sketch) {
         sketch.destroy();
       }
+      if (container.contains(canvas)) {
+        container.removeChild(canvas);
+      }
     };
   }, [items, scale]);
 
@@ -944,8 +1020,8 @@ export default function InfiniteMenu({ items = [], scale = 1.0 }) {
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <canvas id="infinite-grid-menu-canvas" ref={canvasRef} />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }} ref={containerRef}>
+
 
       {activeItem && (
         <div className="face-content-wrapper">

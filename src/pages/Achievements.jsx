@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './Achievements.css';
 import InfiniteMenu from '../components/InfiniteMenu';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
@@ -26,6 +26,13 @@ const Achievements = () => {
     return () => unsubscribe();
   }, []);
 
+  const menuItems = useMemo(() => achievements.map((item) => ({
+    image: item.images?.[0] || '/TRFPV_Assets/JUSTLOGO.png',
+    title: item.title,
+    description: item.description,
+    link: ''
+  })), [achievements]);
+
   if (loading) {
     return (
       <div className="achievements-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white', minHeight: '100vh' }}>
@@ -33,13 +40,6 @@ const Achievements = () => {
       </div>
     );
   }
-
-  const menuItems = achievements.map((item) => ({
-    image: item.images?.[0] || '/TRFPV_Assets/JUSTLOGO.png',
-    title: item.title,
-    description: item.description,
-    link: ''
-  }));
 
   return (
     <div className="achievements-page">
