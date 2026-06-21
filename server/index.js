@@ -64,7 +64,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ── Multer configuration (memory storage, image-only, 10 MB limit) ──
+// ── Multer configuration (memory storage, image-only, 30 MB limit) ──
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'image/heic-sequence', 'application/octet-stream', ''];
 const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 
