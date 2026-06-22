@@ -291,9 +291,11 @@ app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) =>
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
+    const targetFolder = req.body.folder ? `team-rotor/${req.body.folder}` : 'team-rotor';
+
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: 'team-rotor' },
+        { folder: targetFolder },
         (error, result) => {
           if (error) reject(error);
           else resolve(result);

@@ -256,6 +256,7 @@ const Admin = () => {
     setIsUploadingHero(true);
     const data = new FormData();
     data.append("image", file);
+    data.append("folder", "gallery");
     try {
       const idToken = await auth.currentUser.getIdToken();
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -290,6 +291,7 @@ const Admin = () => {
     setIsUploading(true);
     const data = new FormData();
     data.append("image", file);
+    data.append("folder", "achievements");
 
     try {
       const idToken = await auth.currentUser.getIdToken();
@@ -412,6 +414,7 @@ const Admin = () => {
       for (const file of files) {
         const data = new FormData();
         data.append("image", file);
+        data.append("folder", "gallery");
 
         const response = await fetch(`${apiUrl}/api/upload`, {
           method: "POST",
@@ -764,6 +767,7 @@ const Admin = () => {
     setIsUploading(true);
     const data = new FormData();
     data.append("image", file);
+    data.append("folder", "board");
 
     try {
       const idToken = await auth.currentUser.getIdToken();
@@ -804,6 +808,7 @@ const Admin = () => {
     setIsUploading(true);
     const data = new FormData();
     data.append("image", file);
+    data.append("folder", "sponsors");
 
     try {
       const idToken = await auth.currentUser.getIdToken();
