@@ -9,7 +9,7 @@ const allLinks = [
   { name: 'Sponsors', path: '/sponsors' },
   { name: 'Drones', path: '/drones' },
   { name: 'Achievements', path: '/achievements' },
-  { name: 'Team', path: '/team' },
+  { name: 'Board', path: '/team' },
   { name: 'About Us', path: '/about' },
 ];
 

@@ -18,7 +18,7 @@ const Footer = () => {
           <a href="https://www.youtube.com/@rotorfpvvit6869" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
             <FaYoutube size={20} />
           </a>
-          <a href="#" aria-label="Mail">
+          <a href="mailto:teamrotorfpv@vit.ac.in" aria-label="Mail">
             <Mail size={20} />
           </a>
         </div>

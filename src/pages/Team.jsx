@@ -18,6 +18,7 @@ const MemberCard = ({ member }) => {
       opacity={0.8}
       blur={10}
       backgroundOpacity={0.1}
+      useFallback={true}
     >
       <div className="member-card">
         <TiltedCard
@@ -189,7 +190,7 @@ const Team = () => {
       <div className="team-content">
         <div className={`team-year-section active-section ${isAnimating ? 'fade-out' : 'fade-in'}`}>
           <h2 className="year-title">
-            <ShinyText text={`${activeYear} Roster`} speed={3} />
+            <ShinyText text={`Meet Our ${activeYear} Board`} speed={3} />
           </h2>
           
           {activeData.leaders.length > 0 && <h3 className="section-heading">Management</h3>}
@@ -226,6 +227,7 @@ const Team = () => {
           blur={10}
           backgroundOpacity={0.1}
           className="timeline-pill-glass"
+          useFallback={true}
         >
           <div className="cylinder-container">
             {years.map((year, index) => {
