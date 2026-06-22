@@ -22,6 +22,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /team_members/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /team_years/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     // Deny everything else by default.
     // Any new collection must have explicit rules added above.
     match /{document=**} {
