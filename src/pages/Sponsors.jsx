@@ -125,7 +125,13 @@ const Sponsors = () => {
 
   const getDownloadUrl = (url) => {
     if (!url) return "#";
-    // Force download by appending fl_attachment
+    
+    // Raw files (PDFs) don't support image transformations, they download by default with the download attribute
+    if (url.includes('/raw/upload/')) {
+      return url;
+    }
+
+    // Force download by appending fl_attachment for images/videos
     if (url.includes('cloudinary.com') && url.includes('/upload/')) {
       return url.replace('/upload/', '/upload/fl_attachment/');
     }

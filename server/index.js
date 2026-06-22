@@ -297,9 +297,12 @@ app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) =>
 
     const targetFolder = req.body.folder ? `team-rotor/${req.body.folder}` : 'team-rotor';
 
+    const isRaw = req.file.mimetype === 'application/pdf';
+    const rType = isRaw ? 'raw' : 'auto';
+
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: targetFolder, resource_type: 'auto' },
+        { folder: targetFolder, resource_type: rType },
         (error, result) => {
           if (error) reject(error);
           else resolve(result);
