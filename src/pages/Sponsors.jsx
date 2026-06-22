@@ -225,11 +225,25 @@ const Sponsors = () => {
           <h2 className="section-title">
             <ShinyText text="Why Sponsor Us" speed={3} />
           </h2>
-          <div className="why-sponsor-text">
-            <p>
-              {settings?.whySponsorUs || "By sponsoring us, you gain valuable brand visibility among future tech leaders and contribute to the growth of cutting-edge aerospace initiatives."}
-            </p>
-          </div>
+          <SpotlightCard className="why-sponsor-card" spotlightColor="rgba(59, 130, 246, 0.2)">
+            <div className="why-sponsor-content">
+              {(settings?.whySponsorUs || "By sponsoring us, you gain valuable brand visibility among future tech leaders and contribute to the growth of cutting-edge aerospace initiatives.")
+                .split('\n')
+                .filter(line => line.trim() !== '')
+                .map((line, idx) => {
+                  const trimmed = line.trim();
+                  if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
+                    return (
+                      <div key={idx} className="sponsor-bullet">
+                        <span className="bullet-icon">•</span>
+                        <span>{trimmed.substring(1).trim()}</span>
+                      </div>
+                    );
+                  }
+                  return <p key={idx}>{line}</p>;
+                })}
+            </div>
+          </SpotlightCard>
         </section>
 
         {/* Our Sponsors Grid */}

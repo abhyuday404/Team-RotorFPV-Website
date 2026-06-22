@@ -176,17 +176,38 @@
   align-items: center;
 }
 
-.why-sponsor-text {
+.why-sponsor-card {
   max-width: 800px;
-  text-align: center;
-  font-size: 1.1rem;
+  width: 100%;
+  background: #112240 !important;
+  border: 1px solid #233554 !important;
+  border-radius: 16px;
+  margin: 0 auto;
+}
+
+.why-sponsor-content {
+  text-align: left;
+  font-size: 1.15rem;
   line-height: 1.8;
   color: #c4d7ec;
-  background: #112240;
-  border: 1px solid #233554;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  padding: 30px 40px;
-  border-radius: 12px;
+}
+
+.why-sponsor-content p {
+  margin-bottom: 15px;
+}
+
+.sponsor-bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-left: 10px;
+}
+
+.bullet-icon {
+  color: #3B82F6;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 .partners-grid {
