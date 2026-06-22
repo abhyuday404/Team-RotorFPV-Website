@@ -351,23 +351,18 @@ app.post('/api/delete-image', verifyAdmin, async (req, res) => {
       publicId = getPublicIdFromUrl(url);
     }
     
-    console.log('Delete Image Request:', { url, publicId });
-    
     if (!publicId) {
       if (url) return res.json({ result: 'skipped', message: 'No publicId provided and could not derive from URL' });
       return res.status(400).json({ error: 'publicId or url is required' });
     }
 
+    console.log(`[Cloudinary Delete] Attempting to delete:`, { url, publicId });
     const result = await cloudinary.uploader.destroy(publicId);
-    console.log('Cloudinary Destroy Result:', result);
+    console.log(`[Cloudinary Delete] Result:`, result);
     
-    if (result.result !== 'ok') {
-      console.warn(`Warning: Cloudinary destroy returned '${result.result}' for publicId: ${publicId}`);
-    }
-    
-    res.json({ message: 'Image deleted successfully', result: result.result, publicId });
+    res.json({ message: 'Image deletion processed', result: result.result, publicId });
   } catch (error) {
-    console.error('Delete image error:', error);
+    console.error('[Cloudinary Delete] Error:', error);
     res.status(500).json({ error: error.message || 'Delete failed' });
   }
 });
