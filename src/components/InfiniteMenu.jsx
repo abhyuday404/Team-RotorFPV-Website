@@ -705,12 +705,21 @@ class InfiniteGridMenu {
     Promise.all(
       this.items.map(
         item =>
-          new Promise(resolve => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => resolve(img);
-            img.src = item.image;
-          })
+            new Promise(resolve => {
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+              img.onload = () => resolve(img);
+              img.onerror = () => {
+                // If the image fails to load (e.g. deleted from Cloudinary), fallback to the local logo
+                item.image = '/TRFPV_Assets/JUSTLOGO.png';
+                const fallbackImg = new Image();
+                fallbackImg.crossOrigin = 'anonymous';
+                fallbackImg.onload = () => resolve(fallbackImg);
+                fallbackImg.onerror = () => resolve(img); // if even fallback fails, resolve to avoid hanging
+                fallbackImg.src = item.image;
+              };
+              img.src = item.image;
+            })
       )
     ).then(images => {
       if (this.destroyed || !this.gl || !this.items) return;
