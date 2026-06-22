@@ -214,7 +214,7 @@ const Admin = () => {
     try {
       const idToken = await auth.currentUser.getIdToken();
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      await fetch(`${apiUrl}/api/delete-image`, {
+      const response = await fetch(`${apiUrl}/api/delete-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -222,8 +222,18 @@ const Admin = () => {
         },
         body: JSON.stringify({ url })
       });
+      
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP error ${response.status}`);
+      }
     } catch (error) {
-      console.error("Failed to delete Cloudinary image:", error);
+      console.error({
+        action: "cloudinary_delete_failed",
+        url,
+        error: error.message || error,
+        timestamp: new Date().toISOString()
+      });
     }
   };
 

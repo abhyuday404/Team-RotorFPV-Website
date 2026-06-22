@@ -360,6 +360,10 @@ app.post('/api/delete-image', verifyAdmin, async (req, res) => {
     const result = await cloudinary.uploader.destroy(publicId);
     console.log(`[Cloudinary Delete] Result:`, result);
     
+    if (result.result !== 'ok' && result.result !== 'not found') {
+      throw new Error(`Cloudinary deletion failed: ${result.result}`);
+    }
+    
     res.json({ message: 'Image deletion processed', result: result.result, publicId });
   } catch (error) {
     console.error('[Cloudinary Delete] Error:', error);
