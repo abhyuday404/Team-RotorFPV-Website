@@ -20,12 +20,12 @@ const Gallery = () => {
 
   const wrapperRef = useRef(null);
   const heroImgRef = useRef(null);
-  const heroScrollRef = useRef(null);
+  const heroTextRef = useRef(null);
   const galleryContentRef = useRef(null);
 
   useLayoutEffect(() => {
     if (loadingHero) return;
-    if (!wrapperRef.current || !heroImgRef.current || !heroScrollRef.current || !galleryContentRef.current) return;
+    if (!wrapperRef.current || !heroImgRef.current || !heroTextRef.current || !galleryContentRef.current) return;
 
     let ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -46,20 +46,25 @@ const Gallery = () => {
         ease: 'none',
         duration: 1
       }, 0)
-      .to(heroScrollRef.current, {
+      // Fade the hero text (title + scroll hint) in sync with the image
+      .to(heroTextRef.current, {
         opacity: 0,
-        ease: 'power1.in',
-        duration: 0.2
+        ease: 'none',
+        duration: 1
       }, 0)
       .fromTo(galleryContentRef.current, {
-        opacity: 0,
+        autoAlpha: 0,
         scale: 0.95,
+        pointerEvents: 'none',
       }, {
-        opacity: 1,
+        autoAlpha: 1,
         scale: 1,
         ease: 'power1.out',
         duration: 1
-      }, 0);
+      }, 0)
+      // Only allow clicks on the grid once it has substantially appeared,
+      // so you can't click hidden images through the hero photo.
+      .set(galleryContentRef.current, { pointerEvents: 'auto' }, 0.85);
 
     }, wrapperRef.current);
 
@@ -118,11 +123,11 @@ const Gallery = () => {
             alt="Team Rotor FPV" 
             className="gallery-hero-img"
           />
-          <div className="gallery-hero-text">
-            <ScrollFloat triggerRef={wrapperRef} scrollStart="top top" scrollEnd="+=100vh">
+          <div className="gallery-hero-text" ref={heroTextRef}>
+            <ScrollFloat triggerRef={wrapperRef} scrollStart="top top" scrollEnd="+=400vh">
               Gallery
             </ScrollFloat>
-            <div ref={heroScrollRef} className="gallery-hero-scroll">
+            <div className="gallery-hero-scroll">
               <span className="arrow">↓</span> Scroll to Explore
             </div>
           </div>
