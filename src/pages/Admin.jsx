@@ -185,6 +185,26 @@ const Admin = () => {
     }
   };
 
+  // Best-effort removal of an uploaded image from Cloudinary.
+  // No-ops for externally pasted (non-Cloudinary) URLs; never blocks the Firestore delete.
+  const deleteCloudinaryImage = async (url) => {
+    if (!url || !url.includes('res.cloudinary.com')) return;
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      await fetch(`${apiUrl}/api/delete-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ url })
+      });
+    } catch (error) {
+      console.error("Failed to delete Cloudinary image:", error);
+    }
+  };
+
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
@@ -290,10 +310,13 @@ const Admin = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (item) => {
     if (window.confirm("Are you sure you want to delete this achievement?")) {
       try {
-        await deleteDoc(doc(db, 'achievements', id));
+        await deleteDoc(doc(db, 'achievements', item.id));
+        for (const url of item.images || []) {
+          await deleteCloudinaryImage(url);
+        }
       } catch (error) {
         console.error("Delete Error:", error);
         alert("Failed to delete. You might not have permission.");
@@ -423,10 +446,11 @@ const Admin = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleGalleryDelete = async (id) => {
+  const handleGalleryDelete = async (item) => {
     if (window.confirm("Are you sure you want to delete this gallery image?")) {
       try {
-        await deleteDoc(doc(db, 'gallery', id));
+        await deleteDoc(doc(db, 'gallery', item.id));
+        await deleteCloudinaryImage(item.img);
       } catch (error) {
         console.error("Delete Error:", error);
         alert("Failed to delete. You might not have permission.");
@@ -649,10 +673,11 @@ const Admin = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleTeamMemberDelete = async (id) => {
+  const handleTeamMemberDelete = async (member) => {
     if (window.confirm("Are you sure you want to delete this team member?")) {
       try {
-        await deleteDoc(doc(db, 'team_members', id));
+        await deleteDoc(doc(db, 'team_members', member.id));
+        await deleteCloudinaryImage(member.image);
       } catch (error) {
         console.error("Delete Error:", error);
         alert("Failed to delete team member.");
@@ -907,7 +932,7 @@ const Admin = () => {
                       </div>
                       <div className="card-actions">
                         <button onClick={() => handleEdit(item)} className="admin-btn edit small">Edit</button>
-                        <button onClick={() => handleDelete(item.id)} className="admin-btn delete small">Delete</button>
+                        <button onClick={() => handleDelete(item)} className="admin-btn delete small">Delete</button>
                       </div>
                     </div>
                   ))}
@@ -1024,7 +1049,7 @@ const Admin = () => {
                       </div>
                       <div className="card-actions">
                         <button onClick={() => handleGalleryEdit(item)} className="admin-btn edit small">Edit</button>
-                        <button onClick={() => handleGalleryDelete(item.id)} className="admin-btn delete small">Delete</button>
+                        <button onClick={() => handleGalleryDelete(item)} className="admin-btn delete small">Delete</button>
                       </div>
                     </div>
                   ))}
@@ -1201,7 +1226,7 @@ const Admin = () => {
                             </div>
                             <div className="card-actions">
                               <button onClick={() => handleTeamMemberEdit(member)} className="admin-btn edit small">Edit</button>
-                              <button onClick={() => handleTeamMemberDelete(member.id)} className="admin-btn delete small">Delete</button>
+                              <button onClick={() => handleTeamMemberDelete(member)} className="admin-btn delete small">Delete</button>
                             </div>
                           </div>
                         ))}
