@@ -6,7 +6,7 @@ import { db } from '../firebase';
 import ShinyText from '../components/ShinyText';
 import SpotlightCard from '../components/SpotlightCard';
 import { Cpu, Code, Factory } from 'lucide-react';
-import './Sponsors.css';
+import './SponsorUs.css';
 
 const springValues = { damping: 30, stiffness: 100, mass: 2 };
 
@@ -68,7 +68,7 @@ const SponsorCard = ({ sponsor }) => {
   );
 };
 
-const Sponsors = () => {
+const SponsorUs = () => {
   const [sponsors, setSponsors] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -268,4 +268,4 @@ const Sponsors = () => {
   );
 };
 
-export default Sponsors;
+export default SponsorUs;

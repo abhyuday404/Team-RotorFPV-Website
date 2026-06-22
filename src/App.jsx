@@ -8,7 +8,7 @@ import Contact from './pages/Contact';
 import Admin from './pages/Admin';
 import Gallery from './pages/Gallery';
 import Board from './pages/Board';
-import Sponsors from './pages/Sponsors';
+import SponsorUs from './pages/SponsorUs';
 import Silk from './components/Silk';
 import MobileOverlay from './components/MobileOverlay';
 
@@ -32,7 +32,7 @@ function App() {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/board" element={<Board />} />
-          <Route path="/sponsors" element={<Sponsors />} />
+          <Route path="/sponsor-us" element={<SponsorUs />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
