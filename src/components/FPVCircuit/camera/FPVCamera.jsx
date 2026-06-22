@@ -51,21 +51,8 @@ export const FPVCamera = ({ spline }) => {
       }
     });
 
-    // Flips at various track percentages
-    const flipCenters = [0.75];
-    flipCenters.forEach((center, idx) => {
-      // Extended trick duration (12% of track)
-      const t = (p - center) / 0.06;
-      if (t > -1 && t < 1) {
-        const nT = (t + 1) / 2;
-        // Alternate front/back flips
-        const direction = idx % 2 === 0 ? 1 : -1;
-        trickPitch += direction * nT * nT * (3 - 2 * nT) * Math.PI * 2;
-      } else if (t >= 1) {
-        const direction = idx % 2 === 0 ? 1 : -1;
-        trickPitch += direction * Math.PI * 2;
-      }
-    });
+    // Flips have been removed per user request to keep visibility clear.
+    trickPitch = 0;
 
     // Calculate final target look-at position
     targetLookAt.current.copy(lookAheadPos);

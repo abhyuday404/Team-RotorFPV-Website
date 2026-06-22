@@ -287,26 +287,20 @@ export const generateContinuousTrack = (yearCircuits) => {
     const guideArrows = [];
     // Number of arrows proportional to segment length (increase frequency slightly)
     const segmentLength = (island.endProgress - island.startProgress) * totalLength;
-    const numArrows = Math.floor(segmentLength / 50); 
+    const numArrows = Math.floor(segmentLength / 40); // slightly denser spacing
     
-    for (let i = 1; i < numArrows; i++) {
+    for (let i = 0; i <= numArrows; i++) {
       const p = island.startProgress + (i / numArrows) * (island.endProgress - island.startProgress);
       
-      let nearCp = false;
-      
-      island.checkpoints.forEach(cp => {
-        if (Math.abs(cp.progress - p) < 0.01) nearCp = true;
-      });
-
-      if (!nearCp && p > 0.005 && p < 0.995) {
+      if (p >= 0.0 && p <= 1.0) {
         const pos = masterSpline.getPointAt(Math.max(0, Math.min(p, 1)));
         const tangent = masterSpline.getTangentAt(Math.max(0, Math.min(p, 1)));
         
         const up = new THREE.Vector3(0, 1, 0);
         const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
         
-        // Single row of arrows on the right side
-        const offsetPos = pos.clone().add(right.multiplyScalar(18)).add(new THREE.Vector3(0, -8, 0));
+        // Single row of arrows on the right side, offset to be safely parallel (28 units out, -8 units down)
+        const offsetPos = pos.clone().add(right.multiplyScalar(28)).add(new THREE.Vector3(0, -8, 0));
         guideArrows.push({
           id: `arrow-${yearIndex}-${i}`,
           position: offsetPos,
