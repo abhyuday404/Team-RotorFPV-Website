@@ -66,11 +66,11 @@ cloudinary.config({
 
 // ── Multer configuration (memory storage, media up to 20 MB) ──
 const ALLOWED_MIME_TYPES = [
-  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'image/heic-sequence', 
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'image/heic-sequence', 'image/avif',
   'video/mp4', 'video/webm', 'video/quicktime',
-  'application/octet-stream', ''
+  'application/octet-stream', '', 'application/pdf'
 ];
-const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif', 'mp4', 'webm', 'mov'];
+const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif', 'avif', 'mp4', 'webm', 'mov', 'pdf'];
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -87,7 +87,7 @@ const upload = multer({
     const isValidExt = ALLOWED_EXTS.includes(ext);
 
     if (!(isValidMime && isValidExt)) {
-      return cb(new Error('Only JPEG, PNG, WebP, GIF, HEIC images, and MP4/WebM/MOV videos are allowed.'));
+      return cb(new Error('Only JPEG, PNG, WebP, GIF, HEIC, AVIF images, MP4/WebM/MOV videos, and PDF files are allowed.'));
     }
     cb(null, true);
   },
@@ -355,7 +355,7 @@ function getPublicIdFromUrl(url) {
 }
 
 // 🗑️ Delete a Cloudinary asset by its delivery URL or publicId (admin-only) 🗑️
-app.post('/api/delete-image', verifyAdmin, async (req, res) => {
+app.post('/api/delete-asset', verifyAdmin, async (req, res) => {
   try {
     const { url, publicId: providedPublicId } = req.body;
     
@@ -371,14 +371,23 @@ app.post('/api/delete-image', verifyAdmin, async (req, res) => {
     }
 
     console.log(`[Cloudinary Delete] Attempting to delete:`, { url, publicId });
-    const result = await cloudinary.uploader.destroy(publicId);
+    
+    // Cloudinary destroy defaults to resource_type: 'image'. If not found, it might be a video or raw (PDF).
+    let result = await cloudinary.uploader.destroy(publicId);
+    if (result.result === 'not found') {
+       result = await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+    }
+    if (result.result === 'not found') {
+       result = await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+    }
+    
     console.log(`[Cloudinary Delete] Result:`, result);
     
     if (result.result !== 'ok' && result.result !== 'not found') {
       throw new Error(`Cloudinary deletion failed: ${result.result}`);
     }
     
-    res.json({ message: 'Image deletion processed', result: result.result, publicId });
+    res.json({ message: 'Asset deletion processed', result: result.result, publicId });
   } catch (error) {
     console.error('[Cloudinary Delete] Error:', error);
     res.status(500).json({ error: error.message || 'Delete failed' });
@@ -389,11 +398,11 @@ app.post('/api/delete-image', verifyAdmin, async (req, res) => {
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ error: 'File too large. Maximum size is 10 MB.' });
+      return res.status(413).json({ error: 'File too large. Maximum size is 20 MB.' });
     }
     return res.status(400).json({ error: err.message });
   }
-  if (err.message && err.message.includes('images are allowed')) {
+  if (err.message && err.message.includes('are allowed')) {
     return res.status(400).json({ error: err.message });
   }
   next(err);

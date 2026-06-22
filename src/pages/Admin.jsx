@@ -74,6 +74,17 @@ const Admin = () => {
     isActive: true
   });
 
+  // Sponsors Page Settings State
+  const [sponsorPageSettings, setSponsorPageSettings] = useState({
+    title: 'Sponsor Us',
+    description: '',
+    teamImage: { url: '', publicId: '' },
+    brochure: { url: '', publicId: '', name: '' },
+    whySponsorUs: ''
+  });
+  const sponsorSettingsTeamImageRef = useRef(null);
+  const sponsorSettingsBrochureRef = useRef(null);
+
   // Home Page Settings State
   const [homeSettings, setHomeSettings] = useState({
     backgroundVideoUrl: '',
@@ -190,6 +201,21 @@ const Admin = () => {
           }, (error) => {
             console.error("Error fetching team members:", error);
           }));
+          // Fetch Sponsors Settings
+          firestoreUnsubscribes.push(onSnapshot(doc(db, 'settings', 'sponsors'), (docSnap) => {
+            if (docSnap.exists()) {
+              setSponsorPageSettings({
+                title: docSnap.data().title || 'Sponsor Us',
+                description: docSnap.data().description || '',
+                teamImage: docSnap.data().teamImage || { url: '', publicId: '' },
+                brochure: docSnap.data().brochure || { url: '', publicId: '', name: '' },
+                whySponsorUs: docSnap.data().whySponsorUs || ''
+              });
+            }
+          }, (error) => {
+            console.error("Error fetching sponsor settings:", error);
+          }));
+
           const qSponsors = query(collection(db, 'sponsors'), orderBy('order', 'asc'));
           firestoreUnsubscribes.push(onSnapshot(qSponsors, (snapshot) => {
             const data = snapshot.docs.map(doc => ({
@@ -242,7 +268,7 @@ const Admin = () => {
     try {
       const idToken = await auth.currentUser.getIdToken();
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${apiUrl}/api/delete-image`, {
+      const response = await fetch(`${apiUrl}/api/delete-asset`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -935,6 +961,80 @@ const Admin = () => {
     }
   };
 
+  const handleSponsorSettingsChange = (e) => {
+    const { name, value } = e.target;
+    setSponsorPageSettings(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSponsorSettingsUpload = async (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      alert("File is too large! Maximum size is 20MB.");
+      return;
+    }
+
+    setIsUploading(true);
+    const data = new FormData();
+    data.append("image", file);
+    data.append("folder", "sponsors_page");
+
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/upload`, {
+        method: "POST",
+        headers: { 'Authorization': `Bearer ${idToken}` },
+        body: data,
+      });
+      const uploadedMedia = await response.json();
+      if (response.ok && uploadedMedia.secure_url) {
+        if (type === 'teamImage') {
+          if (sponsorPageSettings.teamImage?.url) {
+            await deleteCloudinaryImage(sponsorPageSettings.teamImage.url);
+          }
+          setSponsorPageSettings(prev => ({
+            ...prev,
+            teamImage: { url: uploadedMedia.secure_url, publicId: uploadedMedia.public_id || '' }
+          }));
+        } else if (type === 'brochure') {
+          if (sponsorPageSettings.brochure?.url) {
+            await deleteCloudinaryImage(sponsorPageSettings.brochure.url);
+          }
+          setSponsorPageSettings(prev => ({
+            ...prev,
+            brochure: { url: uploadedMedia.secure_url, publicId: uploadedMedia.public_id || '', name: file.name }
+          }));
+        }
+      } else {
+        alert(uploadedMedia.error || "Upload failed.");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Error uploading file.");
+    } finally {
+      setIsUploading(false);
+      if (type === 'teamImage' && sponsorSettingsTeamImageRef.current) sponsorSettingsTeamImageRef.current.value = '';
+      if (type === 'brochure' && sponsorSettingsBrochureRef.current) sponsorSettingsBrochureRef.current.value = '';
+    }
+  };
+
+  const handleSponsorSettingsSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await setDoc(doc(db, 'settings', 'sponsors'), {
+        ...sponsorPageSettings,
+        updatedAt: serverTimestamp(),
+        updatedBy: user.email
+      }, { merge: true });
+      alert("Sponsors Page Settings updated successfully!");
+    } catch (error) {
+      console.error("Save Error:", error);
+      alert("Failed to save Sponsor Page Settings.");
+    }
+  };
+
   const handleHomeVideoSubmit = async (e) => {
     e.preventDefault();
     if (!homeVideoUrl) {
@@ -1608,6 +1708,73 @@ const Admin = () => {
 
         {activeTab === 'sponsors' && (
           <>
+            <div style={{ gridColumn: '1 / -1', marginBottom: '20px' }}>
+              <div className="admin-glass-panel form-panel">
+                <h2>Sponsors Page Settings</h2>
+                <form onSubmit={handleSponsorSettingsSubmit} className="admin-form">
+                  <div className="form-group">
+                    <label>Description</label>
+                    <textarea
+                      name="description"
+                      value={sponsorPageSettings.description}
+                      onChange={handleSponsorSettingsChange}
+                      rows="3"
+                      placeholder="e.g. Partnering with Team Rotor FPV provides..."
+                    ></textarea>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Team Image</label>
+                      <input
+                        type="file"
+                        accept="image/*,.heic,.heif"
+                        ref={sponsorSettingsTeamImageRef}
+                        onChange={(e) => handleSponsorSettingsUpload(e, 'teamImage')}
+                        disabled={isUploading}
+                      />
+                      {sponsorPageSettings.teamImage?.url && (
+                        <div className="image-preview" style={{ marginTop: '10px' }}>
+                          <img src={sponsorPageSettings.teamImage.url} alt="Team" style={{ maxHeight: '100px', borderRadius: '8px' }} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="form-group">
+                      <label>Brochure PDF</label>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        ref={sponsorSettingsBrochureRef}
+                        onChange={(e) => handleSponsorSettingsUpload(e, 'brochure')}
+                        disabled={isUploading}
+                      />
+                      {sponsorPageSettings.brochure?.url && (
+                        <div style={{ marginTop: '10px' }}>
+                          <p style={{ fontSize: '0.85rem', marginBottom: '5px' }}>Current: {sponsorPageSettings.brochure.name || 'Brochure PDF'}</p>
+                          <a href={sponsorPageSettings.brochure.url} target="_blank" rel="noreferrer" style={{ color: '#a0c4e8', textDecoration: 'underline' }}>Preview PDF</a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Why Sponsor Us</label>
+                    <textarea
+                      name="whySponsorUs"
+                      value={sponsorPageSettings.whySponsorUs}
+                      onChange={handleSponsorSettingsChange}
+                      rows="3"
+                      placeholder="e.g. By sponsoring us, you gain valuable brand visibility..."
+                    ></textarea>
+                  </div>
+
+                  <div className="form-actions">
+                    <button type="submit" className="admin-btn primary" disabled={isUploading}>Save Settings</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
             <div className="admin-left-column">
               <div className="admin-glass-panel form-panel">
                 <h2>{editingSponsorId ? 'Edit Sponsor' : 'Add New Sponsor'}</h2>

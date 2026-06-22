@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useSpring } from 'motion/react';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import ShinyText from '../components/ShinyText';
+import { Cpu, Code, Factory } from 'lucide-react';
 import './Sponsors.css';
 
 const springValues = { damping: 30, stiffness: 100, mass: 2 };
@@ -67,21 +69,37 @@ const SponsorCard = ({ sponsor }) => {
 
 const Sponsors = () => {
   const [sponsors, setSponsors] = useState([]);
+  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Fetch settings
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'sponsors'), (docSnap) => {
+      if (docSnap.exists()) {
+        setSettings(docSnap.data());
+      } else {
+        setSettings({
+          title: 'Sponsor Us',
+          description: '',
+          teamImage: { url: '' },
+          brochure: { url: '' },
+          whySponsorUs: ''
+        });
+      }
+    });
+
+    // Fetch sponsors
     const q = query(
       collection(db, "sponsors"),
       orderBy("order", "asc")
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubSponsors = onSnapshot(q, (snapshot) => {
       const allSponsors = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      // Filter active sponsors in memory to avoid requiring a Firestore composite index
-      // If isActive is undefined (old records), we treat it as active.
       setSponsors(allSponsors.filter(s => s.isActive !== false));
       setLoading(false);
     }, (error) => {
@@ -89,7 +107,10 @@ const Sponsors = () => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubSettings();
+      unsubSponsors();
+    };
   }, []);
 
   if (loading) {
@@ -102,10 +123,92 @@ const Sponsors = () => {
     );
   }
 
+  const helpOptions = [
+    {
+      title: "Technical Collaboration",
+      icon: Cpu,
+      description: "Component donations, dev boards, electronics and hardware."
+    },
+    {
+      title: "Software & Licenses",
+      icon: Code,
+      description: "Software licenses, compute credits, SDKs."
+    },
+    {
+      title: "Manufacturing",
+      icon: Factory,
+      description: "Machining, 3D printing, carbon fiber cutting, and custom parts fabrication."
+    }
+  ];
+
   return (
     <div className="partners-page">
       <div className="partners-content fade-in">
-        <h2 className="year-title">
+
+        {/* Sponsor Us Hero */}
+        <section className="sponsor-hero">
+          <h2 className="year-title">
+            <ShinyText text={settings?.title || "Sponsor Us"} speed={3} />
+          </h2>
+
+          <div className="sponsor-hero-grid">
+            <div className="sponsor-hero-text">
+              <p>{settings?.description || "Partnering with Team Rotor FPV provides a unique platform to engage with a highly passionate community of engineers, innovators, and drone enthusiasts. Your support fuels our journey in pushing the boundaries of FPV technology, competing at international stages, and fostering technical education."}</p>
+              
+              <div className="hero-actions">
+                {settings?.brochure?.url && (
+                  <a href={settings.brochure.url} target="_blank" rel="noreferrer" className="brochure-btn">
+                    View Brochure
+                  </a>
+                )}
+                <button onClick={() => navigate('/contact')} className="contact-btn">
+                  Contact Us
+                </button>
+              </div>
+            </div>
+
+            <div className="sponsor-hero-image">
+              {settings?.teamImage?.url ? (
+                <img src={settings.teamImage.url} alt="Team Rotor FPV" />
+              ) : (
+                <div className="image-placeholder">Team Image Area</div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* How Can You Help */}
+        <section className="how-to-help-section">
+          <h2 className="section-title">
+            <ShinyText text="How Can You Help" speed={3} />
+          </h2>
+          <div className="help-cards-grid">
+            {helpOptions.map((option, idx) => (
+              <div key={idx} className="help-card">
+                <div className="help-card-icon">
+                  <option.icon size={32} />
+                </div>
+                <h3>{option.title}</h3>
+                <p>{option.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Why Sponsor Us */}
+        <section className="why-sponsor-section">
+          <h2 className="section-title">
+            <ShinyText text="Why Sponsor Us" speed={3} />
+          </h2>
+          <div className="why-sponsor-text">
+            <p>
+              {settings?.whySponsorUs || "By sponsoring us, you gain valuable brand visibility among future tech leaders and contribute to the growth of cutting-edge aerospace initiatives."}
+            </p>
+          </div>
+        </section>
+
+        {/* Our Sponsors Grid */}
+        <h2 className="year-title" style={{ marginTop: '60px' }}>
           <ShinyText text="Our Sponsors" speed={3} />
         </h2>
         
@@ -120,6 +223,7 @@ const Sponsors = () => {
             <p>Sponsors will be added here soon.</p>
           </div>
         )}
+
       </div>
     </div>
   );
