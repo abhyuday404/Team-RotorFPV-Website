@@ -64,14 +64,18 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ── Multer configuration (memory storage, image-only, 30 MB limit) ──
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'image/heic-sequence', 'application/octet-stream', ''];
-const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
+// ── Multer configuration (memory storage, media up to 20 MB) ──
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'image/heic-sequence', 
+  'video/mp4', 'video/webm', 'video/quicktime',
+  'application/octet-stream', ''
+];
+const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif', 'mp4', 'webm', 'mov'];
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10 MB
+    fileSize: 20 * 1024 * 1024, // 20 MB
   },
   fileFilter: (req, file, cb) => {
     const ext = file.originalname ? file.originalname.split('.').pop().toLowerCase() : '';
@@ -83,7 +87,7 @@ const upload = multer({
     const isValidExt = ALLOWED_EXTS.includes(ext);
 
     if (!(isValidMime && isValidExt)) {
-      return cb(new Error('Only JPEG, PNG, WebP, GIF, and HEIC images are allowed.'));
+      return cb(new Error('Only JPEG, PNG, WebP, GIF, HEIC images, and MP4/WebM/MOV videos are allowed.'));
     }
     cb(null, true);
   },
@@ -295,7 +299,7 @@ app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) =>
 
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: targetFolder },
+        { folder: targetFolder, resource_type: 'auto' },
         (error, result) => {
           if (error) reject(error);
           else resolve(result);
@@ -304,15 +308,25 @@ app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) =>
       stream.end(req.file.buffer);
     });
 
-    // Optimize Cloudinary URL to automatically handle format (e.g., HEIC -> WebP), quality, and resize to max width 1200px
-    const parts = result.secure_url.split('/upload/');
-    const optimizedUrl = `${parts[0]}/upload/c_limit,w_1200,f_auto,q_auto/${parts[1]}`;
+    let optimizedUrl = result.secure_url;
+    
+    // Cloudinary returns the resource_type it detected.
+    if (result.resource_type === 'video') {
+      // For videos: apply f_auto and q_auto:eco (to save massive bandwidth)
+      const parts = result.secure_url.split('/upload/');
+      optimizedUrl = `${parts[0]}/upload/f_auto,q_auto:eco/${parts[1]}`;
+    } else if (result.resource_type === 'image') {
+      // For images: handle format (e.g., HEIC -> WebP), quality, and resize to max width 1200px
+      const parts = result.secure_url.split('/upload/');
+      optimizedUrl = `${parts[0]}/upload/c_limit,w_1200,f_auto,q_auto/${parts[1]}`;
+    }
 
     res.json({
       secure_url: optimizedUrl,
       width: result.width,
       height: result.height,
       public_id: result.public_id,
+      resource_type: result.resource_type
     });
   } catch (error) {
     console.error('Upload error:', error);

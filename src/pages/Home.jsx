@@ -1,15 +1,32 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { collection, doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 import VariableProximity from '../components/VariableProximity';
 import './Home.css';
 
 const Home = () => {
   const containerRef = useRef(null);
+  const [videoSrc, setVideoSrc] = useState("/TRFPV_Assets/Teamvideo.mp4");
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'home'), (docSnap) => {
+      if (docSnap.exists() && docSnap.data().backgroundVideoUrl) {
+        setVideoSrc(docSnap.data().backgroundVideoUrl);
+      } else {
+        setVideoSrc("/TRFPV_Assets/Teamvideo.mp4");
+      }
+    }, (error) => {
+      console.error("Error fetching home settings:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="home-container" ref={containerRef}>
       <div className="video-background">
-        <video autoPlay loop muted playsInline>
-          <source src="/TRFPV_Assets/Teamvideo.mp4" type="video/mp4" />
+        <video key={videoSrc} autoPlay loop muted playsInline>
+          <source src={videoSrc} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
         <div className="video-overlay"></div>
