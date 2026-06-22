@@ -156,11 +156,20 @@ const Sponsors = () => {
               <p>{settings?.description || "Partnering with Team Rotor FPV provides a unique platform to engage with a highly passionate community of engineers, innovators, and drone enthusiasts. Your support fuels our journey in pushing the boundaries of FPV technology, competing at international stages, and fostering technical education."}</p>
               
               <div className="hero-actions">
-                {settings?.brochure?.url && (
-                  <a href={settings.brochure.url} target="_blank" rel="noreferrer" className="brochure-btn">
-                    View Brochure
-                  </a>
-                )}
+                <a 
+                  href={settings?.brochure?.url || "#"} 
+                  target={settings?.brochure?.url ? "_blank" : "_self"} 
+                  rel="noreferrer" 
+                  className="brochure-btn"
+                  onClick={(e) => {
+                    if (!settings?.brochure?.url) {
+                      e.preventDefault();
+                      alert("Brochure has not been uploaded yet. Please upload it from the Admin Panel.");
+                    }
+                  }}
+                >
+                  View Brochure
+                </a>
                 <button onClick={() => navigate('/contact')} className="contact-btn">
                   Contact Us
                 </button>
