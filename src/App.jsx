@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -12,9 +12,12 @@ import SponsorUs from './pages/SponsorUs';
 import Silk from './components/Silk';
 import MobileOverlay from './components/MobileOverlay';
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const isAchievementsPage = location.pathname === '/achievements';
+
   return (
-    <Router>
+    <>
       {false && <MobileOverlay />}
       <div className="app-background">
         <Silk
@@ -37,7 +40,15 @@ function App() {
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
-      <Footer />
+      {!isAchievementsPage && <Footer />}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }

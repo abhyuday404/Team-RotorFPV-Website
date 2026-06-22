@@ -1,0 +1,98 @@
+import React, { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+import { getGlobalProgress } from '../utils/progress';
+
+export const FPVCamera = ({ spline }) => {
+  const targetLookAt = useRef(new THREE.Vector3());
+  const currentPos = useRef(new THREE.Vector3());
+  const currentLookAt = useRef(new THREE.Vector3());
+  
+  // Track total target rotations for tricks
+  const targetBank = useRef(0);
+  const targetPitch = useRef(0);
+
+  useFrame((state, delta) => {
+    if (!spline) return;
+
+    // We no longer rely on external easing for `p` because FlightController handles smooth damping of globalCurrentProgress.
+    // We just read the current damped value directly.
+    const p = Math.max(0, Math.min(getGlobalProgress(), 1));
+
+    const splinePos = spline.getPointAt(p);
+    const tangent = spline.getTangentAt(p);
+    
+    // Look-ahead calculation
+    const lookAheadU = Math.min(p + 0.02, 1); // Sample slightly ahead
+    const lookAheadPos = spline.getPointAt(lookAheadU);
+    
+    // Add banking (roll) based on how sharp the curve is turning
+    const up = new THREE.Vector3(0, 1, 0);
+    const axis = new THREE.Vector3().crossVectors(up, tangent).normalize();
+    const baseBankAngle = axis.x * 0.15; 
+
+    // Calculate FPV Tricks!
+    let trickRoll = 0;
+    let trickPitch = 0;
+    
+    // Barrel rolls at various track percentages
+    const rollCenters = [0.35];
+    rollCenters.forEach((center, idx) => {
+      // Extended trick duration (16% of track) so it slowly rolls through gates
+      const t = (p - center) / 0.08; 
+      if (t > -1 && t < 1) {
+        const nT = (t + 1) / 2;
+        // Alternate left/right rolls based on index
+        const direction = idx % 2 === 0 ? 1 : -1;
+        trickRoll += direction * nT * nT * (3 - 2 * nT) * Math.PI * 2;
+      } else if (t >= 1) {
+        const direction = idx % 2 === 0 ? 1 : -1;
+        trickRoll += direction * Math.PI * 2;
+      }
+    });
+
+    // Flips at various track percentages
+    const flipCenters = [0.75];
+    flipCenters.forEach((center, idx) => {
+      // Extended trick duration (12% of track)
+      const t = (p - center) / 0.06;
+      if (t > -1 && t < 1) {
+        const nT = (t + 1) / 2;
+        // Alternate front/back flips
+        const direction = idx % 2 === 0 ? 1 : -1;
+        trickPitch += direction * nT * nT * (3 - 2 * nT) * Math.PI * 2;
+      } else if (t >= 1) {
+        const direction = idx % 2 === 0 ? 1 : -1;
+        trickPitch += direction * Math.PI * 2;
+      }
+    });
+
+    // Calculate final target look-at position
+    targetLookAt.current.copy(lookAheadPos);
+    
+    // Smoothly interpolate current camera position to spline position
+    const dist = currentPos.current.distanceTo(splinePos);
+    // Use a smaller lerp factor if we're jumping to a new track (>500 units away)
+    // so it travels beautifully through 3D space
+    const posLerpFactor = dist > 500 ? 0.02 : 0.5;
+    currentPos.current.lerp(splinePos, posLerpFactor);
+    state.camera.position.copy(currentPos.current);
+
+    // Smoothly interpolate where the camera is looking
+    const lookAtLerpFactor = dist > 500 ? 0.02 : 0.5;
+    currentLookAt.current.lerp(targetLookAt.current, lookAtLerpFactor);
+    
+    // Base camera orientation
+    state.camera.lookAt(currentLookAt.current);
+    
+    // Smoothly apply tricks using references to maintain momentum/lag
+    targetBank.current = THREE.MathUtils.lerp(targetBank.current, baseBankAngle + trickRoll, 0.1);
+    targetPitch.current = THREE.MathUtils.lerp(targetPitch.current, trickPitch, 0.1);
+    
+    // Apply local rotations for the tricks!
+    state.camera.rotateX(targetPitch.current);
+    state.camera.rotateZ(targetBank.current);
+  });
+
+  return null;
+};
