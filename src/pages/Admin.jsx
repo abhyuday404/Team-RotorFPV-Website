@@ -1146,19 +1146,20 @@ const Admin = () => {
                     />
                   </div>
 
-                  {homeVideoUrl && (
-                    <div className="video-preview-container" style={{ marginTop: '20px', borderRadius: '8px', overflow: 'hidden' }}>
-                      <p className="field-hint">Preview:</p>
-                      <video 
-                        src={homeVideoUrl} 
-                        autoPlay 
-                        loop 
-                        muted 
-                        playsInline
-                        style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: '8px' }}
-                      />
-                    </div>
-                  )}
+                  <div className="video-preview-container" style={{ marginTop: '20px', borderRadius: '8px', overflow: 'hidden' }}>
+                    <p className="field-hint">
+                      Preview ({homeVideoUrl ? 'Custom Video' : 'Default Video'}):
+                    </p>
+                    <video 
+                      key={homeVideoUrl || '/TRFPV_Assets/Teamvideo.mp4'}
+                      src={homeVideoUrl || '/TRFPV_Assets/Teamvideo.mp4'} 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline
+                      style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: '8px' }}
+                    />
+                  </div>
 
                   <div className="form-actions" style={{ marginTop: '30px' }}>
                     <button type="submit" className="admin-btn primary" disabled={isUploading || !homeVideoUrl}>
