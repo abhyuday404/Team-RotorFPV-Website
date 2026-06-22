@@ -317,6 +317,48 @@ app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) =>
   }
 });
 
+// Derive a Cloudinary public_id from a delivery URL.
+// Handles our optimized URLs that include a transformation + version segment, e.g.
+//   https://res.cloudinary.com/<cloud>/image/upload/c_limit,w_1200,f_auto,q_auto/v1700000000/team-rotor/abc.jpg
+//   -> team-rotor/abc
+function getPublicIdFromUrl(url) {
+  try {
+    const u = new URL(url);
+    if (!u.hostname.includes('res.cloudinary.com')) return null;
+    const afterUpload = u.pathname.split('/upload/')[1];
+    if (!afterUpload) return null;
+    // Take everything after the version segment (vNNN/) if present; otherwise the whole path.
+    const match = afterUpload.match(/v\d+\/(.+)$/);
+    const path = match ? match[1] : afterUpload;
+    // Strip the file extension to get the bare public_id.
+    return path.replace(/\.[^/.]+$/, '');
+  } catch {
+    return null;
+  }
+}
+
+// ── Delete a Cloudinary asset by its delivery URL (admin-only) ──
+app.post('/api/delete-image', verifyAdmin, async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: 'No url provided' });
+    }
+
+    const publicId = getPublicIdFromUrl(url);
+    if (!publicId) {
+      // Externally hosted / pasted URL — nothing to remove from Cloudinary.
+      return res.json({ result: 'skipped' });
+    }
+
+    const result = await cloudinary.uploader.destroy(publicId);
+    res.json({ result: result.result, publicId });
+  } catch (error) {
+    console.error('Cloudinary delete error:', error);
+    res.status(500).json({ error: error.message || 'Delete failed' });
+  }
+});
+
 // Handle multer errors (file too large, wrong type)
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
