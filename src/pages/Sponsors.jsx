@@ -123,6 +123,15 @@ const Sponsors = () => {
     );
   }
 
+  const getDownloadUrl = (url) => {
+    if (!url) return "#";
+    // Force download by appending fl_attachment
+    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+      return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
+  };
+
   const helpOptions = [
     {
       title: "Technical Collaboration",
@@ -157,9 +166,10 @@ const Sponsors = () => {
               
               <div className="hero-actions">
                 <a 
-                  href={settings?.brochure?.url || "#"} 
+                  href={getDownloadUrl(settings?.brochure?.url)} 
                   target={settings?.brochure?.url ? "_blank" : "_self"} 
                   rel="noreferrer" 
+                  download={settings?.brochure?.name || "RotorFPV_Brochure.pdf"}
                   className="brochure-btn"
                   onClick={(e) => {
                     if (!settings?.brochure?.url) {
@@ -168,7 +178,7 @@ const Sponsors = () => {
                     }
                   }}
                 >
-                  View Brochure
+                  Download Brochure
                 </a>
                 <button onClick={() => navigate('/contact')} className="contact-btn">
                   Contact Us
