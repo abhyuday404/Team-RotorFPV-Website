@@ -162,12 +162,11 @@ const Sponsors = () => {
 
         {/* Sponsor Us Hero */}
         <section className="sponsor-hero">
-          <h2 className="year-title">
-            <ShinyText text={settings?.title || "Sponsor Us"} speed={3} />
-          </h2>
-
           <div className="sponsor-hero-grid">
             <div className="sponsor-hero-text">
+              <h2 className="sponsor-hero-title">
+                <ShinyText text={settings?.title || "Sponsor Us"} speed={3} />
+              </h2>
               <p>{settings?.description || "Partnering with Team Rotor FPV provides a unique platform to engage with a highly passionate community of engineers, innovators, and drone enthusiasts. Your support fuels our journey in pushing the boundaries of FPV technology, competing at international stages, and fostering technical education."}</p>
               
               <div className="hero-actions">
