@@ -81,7 +81,8 @@ const Sponsors = () => {
         ...doc.data()
       }));
       // Filter active sponsors in memory to avoid requiring a Firestore composite index
-      setSponsors(allSponsors.filter(s => s.isActive === true));
+      // If isActive is undefined (old records), we treat it as active.
+      setSponsors(allSponsors.filter(s => s.isActive !== false));
       setLoading(false);
     }, (error) => {
       console.error("Error fetching sponsors:", error);
