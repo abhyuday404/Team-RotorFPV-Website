@@ -4,6 +4,7 @@ import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import ShinyText from '../components/ShinyText';
+import SpotlightCard from '../components/SpotlightCard';
 import { Cpu, Code, Factory } from 'lucide-react';
 import './Sponsors.css';
 
@@ -208,13 +209,13 @@ const Sponsors = () => {
           </h2>
           <div className="help-cards-grid">
             {helpOptions.map((option, idx) => (
-              <div key={idx} className="help-card">
+              <SpotlightCard key={idx} className="help-card" spotlightColor="rgba(59, 130, 246, 0.5)">
                 <div className="help-card-icon">
                   <option.icon size={32} />
                 </div>
                 <h3>{option.title}</h3>
                 <p>{option.description}</p>
-              </div>
+              </SpotlightCard>
             ))}
           </div>
         </section>

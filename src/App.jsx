@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Achievements from './pages/Achievements';
+import Contact from './pages/Contact';
 import Admin from './pages/Admin';
 import Gallery from './pages/Gallery';
 import Board from './pages/Board';
@@ -32,6 +33,7 @@ function App() {
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/board" element={<Board />} />
           <Route path="/sponsors" element={<Sponsors />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>

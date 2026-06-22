@@ -82,13 +82,13 @@
 }
 
 .contact-btn {
-  background: #64ffda;
-  color: #0a192f;
+  background: #3B82F6;
+  color: #ffffff;
   border: none;
 }
 
 .contact-btn:hover {
-  background: #4cd8b8;
+  background: #2563EB;
   transform: translateY(-2px);
 }
 
@@ -137,9 +137,8 @@
 }
 
 .help-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #112240;
+  border: 1px solid #233554;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   padding: 40px 30px;
   border-radius: 16px;
@@ -150,13 +149,10 @@
   align-items: center;
 }
 
-.help-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(255, 255, 255, 0.15);
-}
+
 
 .help-card-icon {
-  color: #64ffda;
+  color: #3B82F6;
   margin-bottom: 20px;
 }
 
@@ -186,11 +182,11 @@
   font-size: 1.1rem;
   line-height: 1.8;
   color: #c4d7ec;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: #112240;
+  border: 1px solid #233554;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   padding: 30px 40px;
   border-radius: 12px;
-  backdrop-filter: blur(10px);
 }
 
 .partners-grid {
