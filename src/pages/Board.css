@@ -2,7 +2,7 @@
   min-height: 100vh;
   padding-top: 50px;
   padding-bottom: 80px;
-  max-width: 1350px;
+  max-width: 1650px;
   margin: 0 auto;
   position: relative;
   color: #e0e0e0;
@@ -166,6 +166,7 @@
 
 .cylinder-item {
   position: absolute;
+  left: 0;
   height: 30px;
   line-height: 30px;
   text-align: center;
@@ -177,6 +178,10 @@
   transform-origin: 50% 50% -50px;
   transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
   user-select: none;
+}
+
+.timeline-pill-glass .glass-surface__content {
+  padding: 8px 0 !important;
 }
 
 .cylinder-item:hover {

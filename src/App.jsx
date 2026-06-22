@@ -6,7 +6,7 @@ import Home from './pages/Home';
 import Achievements from './pages/Achievements';
 import Admin from './pages/Admin';
 import Gallery from './pages/Gallery';
-import Team from './pages/Team';
+import Board from './pages/Board';
 import Silk from './components/Silk';
 import MobileOverlay from './components/MobileOverlay';
 
@@ -29,7 +29,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/achievements" element={<Achievements />} />
-          <Route path="/team" element={<Team />} />
+          <Route path="/board" element={<Board />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>

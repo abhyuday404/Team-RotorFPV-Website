@@ -5,7 +5,7 @@ import TiltedCard from '../components/TiltedCard';
 import { FaLinkedin } from 'react-icons/fa';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
-import './Team.css';
+import './Board.css';
 
 const MemberCard = ({ member }) => {
   return (
@@ -49,7 +49,14 @@ const MemberCard = ({ member }) => {
   );
 };
 
-const Team = () => {
+const formatBoardYear = (year) => {
+  if (typeof year === 'string' && year.length === 4 && !isNaN(parseInt(year))) {
+    return `${year}-${parseInt(year) + 1}`;
+  }
+  return year;
+};
+
+const Board = () => {
   const [teamData, setTeamData] = useState({});
   const [years, setYears] = useState([]);
   const [activeYear, setActiveYear] = useState(null);
@@ -64,7 +71,7 @@ const Team = () => {
     const unsubs = [];
     
     // Default structure helper
-    const getEmptyYear = () => ({ leaders: [], technical: [], miscellaneous: [] });
+    const getEmptyYear = () => ({ leaders: [], technical: [], essential: [] });
 
     // 1. Fetch years
     const qYears = query(collection(db, 'team_years'), orderBy('year', 'desc'));
@@ -95,7 +102,8 @@ const Team = () => {
           newTeamData[year] = getEmptyYear();
         }
         
-        const category = data.category || 'leaders';
+        let category = data.category || 'leaders';
+        if (category === 'miscellaneous') category = 'essential';
         // Safety check just in case an unknown category exists
         if (newTeamData[year][category]) {
           newTeamData[year][category].push({ id: doc.id, ...data });
@@ -183,14 +191,14 @@ const Team = () => {
     );
   }
 
-  const activeData = teamData[activeYear] || { leaders: [], technical: [], miscellaneous: [] };
+  const activeData = teamData[activeYear] || { leaders: [], technical: [], essential: [] };
 
   return (
     <div className="team-page">
       <div className="team-content">
         <div className={`team-year-section active-section ${isAnimating ? 'fade-out' : 'fade-in'}`}>
           <h2 className="year-title">
-            <ShinyText text={`Meet Our ${activeYear} Board`} speed={3} />
+            <ShinyText text={`Meet Our ${formatBoardYear(activeYear)} Board`} speed={3} />
           </h2>
           
           {activeData.leaders.length > 0 && <h3 className="section-heading">Management</h3>}
@@ -207,9 +215,9 @@ const Team = () => {
             ))}
           </div>
 
-          {activeData.miscellaneous.length > 0 && <h3 className="section-heading">Miscellaneous</h3>}
+          {activeData.essential.length > 0 && <h3 className="section-heading">Essential</h3>}
           <div className="team-grid">
-            {activeData.miscellaneous.map((member) => (
+            {activeData.essential.map((member) => (
               <MemberCard key={member.id} member={member} />
             ))}
           </div>
@@ -219,7 +227,7 @@ const Team = () => {
       {/* The Pill Timeline */}
       <div className="timeline-pill-container" ref={pillRef}>
         <GlassSurface
-          width={50}
+          width={100}
           height={130}
           borderRadius={30}
           brightness={40}
@@ -247,7 +255,7 @@ const Team = () => {
                   }}
                   onClick={() => changeYear(year)}
                 >
-                  {year}
+                  {formatBoardYear(year)}
                 </div>
               );
             })}
@@ -258,4 +266,4 @@ const Team = () => {
   );
 };
 
-export default Team;
+export default Board;

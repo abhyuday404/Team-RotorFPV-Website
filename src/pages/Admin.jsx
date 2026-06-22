@@ -4,6 +4,13 @@ import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from
 import { db, auth } from '../firebase';
 import './Admin.css';
 
+const formatBoardYear = (year) => {
+  if (typeof year === 'string' && year.length === 4 && !isNaN(parseInt(year))) {
+    return `${year}-${parseInt(year) + 1}`;
+  }
+  return year;
+};
+
 const Admin = () => {
   const [user, setUser] = useState(null);
   const [achievements, setAchievements] = useState([]);
@@ -131,10 +138,14 @@ const Admin = () => {
 
           const qTeamMembers = query(collection(db, 'team_members'), orderBy('order', 'asc'));
           firestoreUnsubscribes.push(onSnapshot(qTeamMembers, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
+            const data = snapshot.docs.map(doc => {
+              const d = doc.data();
+              if (d.category === 'miscellaneous') d.category = 'essential';
+              return {
+                id: doc.id,
+                ...d
+              };
+            });
             setTeamMembers(data);
           }, (error) => {
             console.error("Error fetching team members:", error);
@@ -774,7 +785,7 @@ const Admin = () => {
           className={`admin-tab ${activeTab === 'team' ? 'active' : ''}`}
           onClick={() => { setActiveTab('team'); resetTeamMemberForm(); }}
         >
-          Team Space
+          Board
         </button>
         {(user?.isSuperAdmin) && (
           <button
@@ -1034,7 +1045,7 @@ const Admin = () => {
                     type="text"
                     value={newTeamYear}
                     onChange={(e) => setNewTeamYear(e.target.value)}
-                    placeholder="e.g. 2026"
+                    placeholder="e.g. 2026 or 2026-2027"
                     required
                   />
                   <button type="submit" className="admin-btn primary small">Add Year</button>
@@ -1042,7 +1053,7 @@ const Admin = () => {
                 <div className="year-pills">
                   {teamYears.map(year => (
                     <div key={year} className={`year-pill ${selectedTeamYear === year ? 'active' : ''}`}>
-                      <span onClick={() => { setSelectedTeamYear(year); resetTeamMemberForm(); }}>{year}</span>
+                      <span onClick={() => { setSelectedTeamYear(year); resetTeamMemberForm(); }}>{formatBoardYear(year)}</span>
                       <button onClick={() => handleDeleteYear(year)} className="delete-year-btn">×</button>
                     </div>
                   ))}
@@ -1052,7 +1063,7 @@ const Admin = () => {
 
               {selectedTeamYear && (
                 <div className="admin-glass-panel form-panel">
-                  <h2>{editingTeamMemberId ? `Edit Member (${selectedTeamYear})` : `Add Member (${selectedTeamYear})`}</h2>
+                  <h2>{editingTeamMemberId ? `Edit Member (${formatBoardYear(selectedTeamYear)})` : `Add Member (${formatBoardYear(selectedTeamYear)})`}</h2>
                   <form onSubmit={handleTeamMemberSubmit} className="admin-form">
                     <div className="form-row">
                       <div className="form-group">
@@ -1076,7 +1087,7 @@ const Admin = () => {
                         >
                           <option value="leaders">Leaders</option>
                           <option value="technical">Technical</option>
-                          <option value="miscellaneous">Miscellaneous</option>
+                          <option value="essential">Essential</option>
                         </select>
                       </div>
                     </div>
@@ -1173,8 +1184,8 @@ const Admin = () => {
 
             <div className="admin-right-column">
               <div className="admin-glass-panel list-panel">
-                <h2>Members in {selectedTeamYear || '...'}</h2>
-                {['leaders', 'technical', 'miscellaneous'].map(category => {
+                <h2>Members in {selectedTeamYear ? formatBoardYear(selectedTeamYear) : '...'}</h2>
+                {['leaders', 'technical', 'essential'].map(category => {
                   const categoryMembers = teamMembers.filter(m => m.year === selectedTeamYear && m.category === category);
                   if (categoryMembers.length === 0) return null;
                   
