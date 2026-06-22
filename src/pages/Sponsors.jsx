@@ -32,14 +32,14 @@ const TiltWrapper = ({ children, rotateAmplitude = 14, scaleOnHover = 1.05 }) =>
   }
 
   return (
-    <div style={{ perspective: 1200 }} className="sponsor-tilt-container">
+    <div style={{ perspective: 1200 }} className="partner-tilt-container">
       <motion.div
         ref={ref}
         onMouseMove={handleMouse}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         style={{ rotateX, rotateY, scale, transformStyle: 'preserve-3d' }}
-        className="sponsor-tilt-inner"
+        className="partner-tilt-inner"
       >
         {children}
       </motion.div>
@@ -50,14 +50,14 @@ const TiltWrapper = ({ children, rotateAmplitude = 14, scaleOnHover = 1.05 }) =>
 const SponsorCard = ({ sponsor }) => {
   return (
     <TiltWrapper rotateAmplitude={12} scaleOnHover={1.05}>
-      <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="sponsor-link">
-        <div className="sponsor-card">
-          <div className="sponsor-logo-container">
-            <img src={sponsor.logo} alt={sponsor.name} className="sponsor-logo" />
+      <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="partner-link">
+        <div className="partner-card">
+          <div className="partner-logo-container">
+            <img src={sponsor.logo} alt={sponsor.name} className="partner-logo" />
           </div>
-          <div className="sponsor-info-below">
-            <h3 className="sponsor-name-text">{sponsor.name}</h3>
-            <p className="sponsor-click-text">Visit Website</p>
+          <div className="partner-info-below">
+            <h3 className="partner-name-text">{sponsor.name}</h3>
+            <p className="partner-click-text">Visit Website</p>
           </div>
         </div>
       </a>
@@ -94,8 +94,8 @@ const Sponsors = () => {
 
   if (loading) {
     return (
-      <div className="sponsors-page">
-        <div className="sponsors-content flex-center">
+      <div className="partners-page">
+        <div className="partners-content flex-center">
           <div className="loading-spinner">Loading sponsors...</div>
         </div>
       </div>
@@ -103,20 +103,20 @@ const Sponsors = () => {
   }
 
   return (
-    <div className="sponsors-page">
-      <div className="sponsors-content fade-in">
+    <div className="partners-page">
+      <div className="partners-content fade-in">
         <h2 className="year-title">
           <ShinyText text="Our Sponsors" speed={3} />
         </h2>
         
         {sponsors.length > 0 ? (
-          <div className="sponsors-grid">
+          <div className="partners-grid">
             {sponsors.map((sponsor) => (
               <SponsorCard key={sponsor.id} sponsor={sponsor} />
             ))}
           </div>
         ) : (
-          <div className="no-sponsors">
+          <div className="no-partners">
             <p>Sponsors will be added here soon.</p>
           </div>
         )}

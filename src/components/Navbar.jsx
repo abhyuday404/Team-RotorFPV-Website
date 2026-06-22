@@ -6,7 +6,7 @@ import './Navbar.css';
 
 const allLinks = [
   { name: 'Gallery', path: '/gallery' },
-  { name: 'Sponsors', path: '/sponsors' },
+  { name: 'Sponsor Us', path: '/sponsors' },
   { name: 'Drones', path: '/drones' },
   { name: 'Achievements', path: '/achievements' },
   { name: 'Board', path: '/board' },

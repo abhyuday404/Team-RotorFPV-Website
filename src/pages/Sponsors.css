@@ -1,4 +1,4 @@
-.sponsors-page {
+.partners-page {
   min-height: 100vh;
   padding-top: 50px;
   padding-bottom: 80px;
@@ -8,7 +8,7 @@
   color: #e0e0e0;
 }
 
-.sponsors-content {
+.partners-content {
   padding: 0 80px;
 }
 
@@ -27,7 +27,7 @@
   text-decoration-thickness: 1px;
 }
 
-.sponsors-grid {
+.partners-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -35,20 +35,20 @@
   margin-bottom: 60px;
 }
 
-.sponsor-tilt-container {
+.partner-tilt-container {
   display: block;
 }
 
-.sponsor-tilt-inner {
+.partner-tilt-inner {
   will-change: transform;
 }
 
-.sponsor-link {
+.partner-link {
   text-decoration: none;
   display: block;
 }
 
-.sponsor-card {
+.partner-card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -59,7 +59,7 @@
   border: none;
 }
 
-.sponsor-logo-container {
+.partner-logo-container {
   width: 140px;
   height: 140px;
   display: flex;
@@ -69,13 +69,13 @@
   transform: translateZ(30px); 
 }
 
-.sponsor-logo {
+.partner-logo {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
 
-.sponsor-info-below {
+.partner-info-below {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -85,7 +85,7 @@
   transform: translateZ(20px);
 }
 
-.sponsor-name-text {
+.partner-name-text {
   color: white;
   font-size: 1.1rem;
   font-weight: 600;
@@ -94,7 +94,7 @@
   font-family: 'Inter', sans-serif;
 }
 
-.sponsor-click-text {
+.partner-click-text {
   color: #a0c4e8;
   font-size: 0.9rem;
   font-weight: 500;
@@ -102,12 +102,12 @@
   transition: opacity 0.3s, color 0.3s;
 }
 
-.sponsor-tilt-inner:hover .sponsor-click-text {
+.partner-tilt-inner:hover .partner-click-text {
   opacity: 1;
   color: #c4d7ec;
 }
 
-.no-sponsors {
+.no-partners {
   text-align: center;
   font-size: 1.2rem;
   color: #a0c4e8;
@@ -116,13 +116,13 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .sponsors-content {
+  .partners-content {
     padding: 0 40px;
   }
 }
 
 @media (max-width: 480px) {
-  .sponsors-content {
+  .partners-content {
     padding: 0 15px;
   }
 }
