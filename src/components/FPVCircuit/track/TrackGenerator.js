@@ -285,9 +285,9 @@ export const generateContinuousTrack = (yearCircuits) => {
 
     // Guide arrows
     const guideArrows = [];
-    // Number of arrows proportional to segment length (increase frequency slightly)
+    // Number of arrows proportional to segment length (reduced density per user request)
     const segmentLength = (island.endProgress - island.startProgress) * totalLength;
-    const numArrows = Math.floor(segmentLength / 40); // slightly denser spacing
+    const numArrows = Math.floor(segmentLength / 180); // significantly less dense spacing
     
     for (let i = 0; i <= numArrows; i++) {
       const p = island.startProgress + (i / numArrows) * (island.endProgress - island.startProgress);
