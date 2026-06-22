@@ -310,6 +310,7 @@ app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) =>
       secure_url: optimizedUrl,
       width: result.width,
       height: result.height,
+      public_id: result.public_id,
     });
   } catch (error) {
     console.error('Upload error:', error);
@@ -337,24 +338,26 @@ function getPublicIdFromUrl(url) {
   }
 }
 
-// ── Delete a Cloudinary asset by its delivery URL (admin-only) ──
+// 🗑️ Delete a Cloudinary asset by its delivery URL or publicId (admin-only) 🗑️
 app.post('/api/delete-image', verifyAdmin, async (req, res) => {
   try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ error: 'No url provided' });
+    const { url, publicId: providedPublicId } = req.body;
+    
+    let publicId = providedPublicId;
+    
+    if (!publicId && url) {
+      publicId = getPublicIdFromUrl(url);
     }
-
-    const publicId = getPublicIdFromUrl(url);
+    
     if (!publicId) {
-      // Externally hosted / pasted URL — nothing to remove from Cloudinary.
-      return res.json({ result: 'skipped' });
+      if (url) return res.json({ result: 'skipped', message: 'No publicId provided and could not derive from URL' });
+      return res.status(400).json({ error: 'publicId or url is required' });
     }
 
     const result = await cloudinary.uploader.destroy(publicId);
-    res.json({ result: result.result, publicId });
+    res.json({ message: 'Image deleted successfully', result: result.result, publicId });
   } catch (error) {
-    console.error('Cloudinary delete error:', error);
+    console.error('Delete image error:', error);
     res.status(500).json({ error: error.message || 'Delete failed' });
   }
 });

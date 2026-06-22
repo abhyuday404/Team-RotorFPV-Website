@@ -62,6 +62,18 @@ const Admin = () => {
     order: 0
   });
 
+  // Sponsors State
+  const [sponsors, setSponsors] = useState([]);
+  const [editingSponsorId, setEditingSponsorId] = useState(null);
+  const sponsorFileInputRef = useRef(null);
+  const [sponsorFormData, setSponsorFormData] = useState({
+    name: '',
+    website: '',
+    logo: '',
+    order: 0,
+    isActive: true
+  });
+
   useEffect(() => {
     let firestoreUnsubscribes = [];
 
@@ -149,6 +161,16 @@ const Admin = () => {
             setTeamMembers(data);
           }, (error) => {
             console.error("Error fetching team members:", error);
+          }));
+          const qSponsors = query(collection(db, 'sponsors'), orderBy('order', 'asc'));
+          firestoreUnsubscribes.push(onSnapshot(qSponsors, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            setSponsors(data);
+          }, (error) => {
+            console.error("Error fetching admin sponsors:", error);
           }));
           
           fetchAdminsList();
@@ -244,6 +266,9 @@ const Admin = () => {
       });
       const uploadedImage = await response.json();
       if (response.ok && uploadedImage.secure_url) {
+        if (galleryHeroUrl) {
+          await deleteCloudinaryImage(galleryHeroUrl);
+        }
         await setDoc(doc(db, 'settings', 'gallery'), { heroImageUrl: uploadedImage.secure_url }, { merge: true });
         alert("Gallery Hero Image updated successfully!");
       } else {
@@ -342,6 +367,13 @@ const Admin = () => {
 
     try {
       if (editingId) {
+        const oldItem = achievements.find(a => a.id === editingId);
+        if (oldItem && oldItem.images && oldItem.images.length > 0) {
+          const oldUrl = oldItem.images[0];
+          if (oldUrl && oldUrl !== formData.imageUrl) {
+            await deleteCloudinaryImage(oldUrl);
+          }
+        }
         await updateDoc(doc(db, 'achievements', editingId), dataToSave);
       } else {
         await addDoc(collection(db, 'achievements'), dataToSave);
@@ -487,6 +519,10 @@ const Admin = () => {
 
     try {
       if (editingGalleryId) {
+        const oldItem = galleryItems.find(g => g.id === editingGalleryId);
+        if (oldItem && oldItem.img && oldItem.img !== galleryFormData.imgUrl) {
+          await deleteCloudinaryImage(oldItem.img);
+        }
         await updateDoc(doc(db, 'gallery', editingGalleryId), dataToSave);
       } else {
         await addDoc(collection(db, 'gallery'), dataToSave);
@@ -705,6 +741,10 @@ const Admin = () => {
 
     try {
       if (editingTeamMemberId) {
+        const oldItem = teamMembers.find(t => t.id === editingTeamMemberId);
+        if (oldItem && oldItem.image && oldItem.image !== teamMemberFormData.image) {
+          await deleteCloudinaryImage(oldItem.image);
+        }
         await updateDoc(doc(db, 'team_members', editingTeamMemberId), dataToSave);
       } else {
         dataToSave.createdAt = serverTimestamp();
@@ -745,6 +785,110 @@ const Admin = () => {
     } finally {
       setIsUploading(false);
       if (teamMemberFileInputRef.current) teamMemberFileInputRef.current.value = '';
+    }
+  };
+
+  // --- Sponsors Handlers ---
+  const handleSponsorInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setSponsorFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSponsorImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const data = new FormData();
+    data.append("image", file);
+
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/upload`, {
+        method: "POST",
+        headers: { 'Authorization': `Bearer ${idToken}` },
+        body: data,
+      });
+      const uploadedImage = await response.json();
+      if (response.ok && uploadedImage.secure_url) {
+        setSponsorFormData(prev => ({ ...prev, logo: uploadedImage.secure_url }));
+      } else {
+        alert(uploadedImage.error || "Upload failed.");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Error uploading image.");
+    } finally {
+      setIsUploading(false);
+      if (sponsorFileInputRef.current) sponsorFileInputRef.current.value = '';
+    }
+  };
+
+  const resetSponsorForm = () => {
+    setSponsorFormData({ name: '', website: '', logo: '', order: 0, isActive: true });
+    setEditingSponsorId(null);
+  };
+
+  const handleSponsorEdit = (item) => {
+    setEditingSponsorId(item.id);
+    setSponsorFormData({
+      name: item.name || '',
+      website: item.website || '',
+      logo: item.logo || '',
+      order: item.order || 0,
+      isActive: item.isActive !== false
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSponsorDelete = async (item) => {
+    if (window.confirm("Are you sure you want to delete this sponsor?")) {
+      try {
+        await deleteDoc(doc(db, 'sponsors', item.id));
+        await deleteCloudinaryImage(item.logo);
+      } catch (error) {
+        console.error("Delete Error:", error);
+        alert("Failed to delete sponsor.");
+      }
+    }
+  };
+
+  const handleSponsorSubmit = async (e) => {
+    e.preventDefault();
+    if (!sponsorFormData.name || !sponsorFormData.logo) {
+       alert("Name and Logo are required.");
+       return;
+    }
+    const dataToSave = {
+      name: sponsorFormData.name,
+      website: sponsorFormData.website,
+      logo: sponsorFormData.logo,
+      order: Number(sponsorFormData.order),
+      isActive: sponsorFormData.isActive,
+      updatedAt: serverTimestamp(),
+      updatedBy: user.email
+    };
+
+    try {
+      if (editingSponsorId) {
+        const oldItem = sponsors.find(s => s.id === editingSponsorId);
+        if (oldItem && oldItem.logo && oldItem.logo !== sponsorFormData.logo) {
+          await deleteCloudinaryImage(oldItem.logo);
+        }
+        await updateDoc(doc(db, 'sponsors', editingSponsorId), dataToSave);
+      } else {
+        dataToSave.createdAt = serverTimestamp();
+        dataToSave.createdBy = user.email;
+        await addDoc(collection(db, 'sponsors'), dataToSave);
+      }
+      resetSponsorForm();
+    } catch (error) {
+      console.error("Save Error:", error);
+      alert("Failed to save sponsor.");
     }
   };
 
@@ -811,6 +955,12 @@ const Admin = () => {
           onClick={() => { setActiveTab('team'); resetTeamMemberForm(); }}
         >
           Board
+        </button>
+        <button
+          className={`admin-tab ${activeTab === 'sponsors' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('sponsors'); resetSponsorForm(); }}
+        >
+          Sponsors
         </button>
         {(user?.isSuperAdmin) && (
           <button
@@ -1240,6 +1390,127 @@ const Admin = () => {
                 {!selectedTeamYear && (
                   <p className="empty-state">Select a year to view members.</p>
                 )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'sponsors' && (
+          <>
+            <div className="admin-left-column">
+              <div className="admin-glass-panel form-panel">
+                <h2>{editingSponsorId ? 'Edit Sponsor' : 'Add New Sponsor'}</h2>
+                <form onSubmit={handleSponsorSubmit} className="admin-form">
+                  <div className="form-group">
+                    <label>Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={sponsorFormData.name}
+                      onChange={handleSponsorInputChange}
+                      required
+                      placeholder="e.g. DJI"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Website URL</label>
+                    <input
+                      type="url"
+                      name="website"
+                      value={sponsorFormData.website}
+                      onChange={handleSponsorInputChange}
+                      required
+                      placeholder="https://www.dji.com"
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Order</label>
+                      <input
+                        type="number"
+                        name="order"
+                        value={sponsorFormData.order}
+                        onChange={handleSponsorInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Logo</label>
+                    <div className="file-upload">
+                      <input
+                        type="file"
+                        accept="image/*,.heic,.heif"
+                        ref={sponsorFileInputRef}
+                        onChange={handleSponsorImageUpload}
+                        disabled={isUploading}
+                      />
+                      {isUploading && <span className="upload-status">Uploading...</span>}
+                    </div>
+                    <div className="input-divider">or</div>
+                    <input
+                      type="text"
+                      name="logo"
+                      value={sponsorFormData.logo}
+                      onChange={handleSponsorInputChange}
+                      placeholder="Paste an image URL directly"
+                      required
+                    />
+                    {sponsorFormData.logo && (
+                      <div className="image-preview achievement" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: '10px' }}>
+                        <img src={sponsorFormData.logo} alt="Preview" style={{ objectFit: 'contain' }} />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="form-group checkbox-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        name="isActive"
+                        checked={sponsorFormData.isActive}
+                        onChange={handleSponsorInputChange}
+                      />
+                      Active (visible on website)
+                    </label>
+                  </div>
+
+                  <div className="form-actions">
+                    {editingSponsorId && (
+                      <button type="button" onClick={resetSponsorForm} className="admin-btn cancel">
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" className="admin-btn primary">
+                      {editingSponsorId ? 'Update Sponsor' : 'Add Sponsor'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div className="admin-right-column">
+              <div className="admin-glass-panel list-panel">
+                <h2>Current Sponsors</h2>
+                <div className="achievements-list">
+                  {sponsors.map((item) => (
+                    <div key={item.id} className={`admin-achievement-card ${!item.isActive ? 'inactive-member' : ''}`}>
+                      <div className="card-info">
+                        <h3>{item.name} <span className={`status-badge ${item.isActive ? 'active' : 'inactive'}`}>{item.isActive ? 'Active' : 'Inactive'}</span></h3>
+                        <span className="order-badge">Order: {item.order}</span>
+                        <p className="card-desc"><a href={item.website} target="_blank" rel="noopener noreferrer" style={{color: 'inherit'}}>{item.website}</a></p>
+                      </div>
+                      <div className="card-actions">
+                        <button onClick={() => handleSponsorEdit(item)} className="admin-btn edit small">Edit</button>
+                        <button onClick={() => handleSponsorDelete(item)} className="admin-btn delete small">Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                  {sponsors.length === 0 && <p className="empty-state">No sponsors yet.</p>}
+                </div>
               </div>
             </div>
           </>

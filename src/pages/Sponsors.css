@@ -1,0 +1,128 @@
+.sponsors-page {
+  min-height: 100vh;
+  padding-top: 50px;
+  padding-bottom: 80px;
+  max-width: 1650px;
+  margin: 0 auto;
+  position: relative;
+  color: #e0e0e0;
+}
+
+.sponsors-content {
+  padding: 0 80px;
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.year-title {
+  font-size: 2.5rem;
+  margin-bottom: 60px;
+  color: #fff;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 10px;
+  text-decoration-color: rgba(255, 255, 255, 0.3);
+  text-decoration-thickness: 1px;
+}
+
+.sponsors-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 60px;
+}
+
+.sponsor-tilt-container {
+  display: block;
+}
+
+.sponsor-tilt-inner {
+  will-change: transform;
+}
+
+.sponsor-link {
+  text-decoration: none;
+  display: block;
+}
+
+.sponsor-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 10px;
+  width: 200px;
+  height: 250px;
+  background: transparent;
+  border: none;
+}
+
+.sponsor-logo-container {
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Slightly lift the logo within the 3D card for a layered effect */
+  transform: translateZ(30px); 
+}
+
+.sponsor-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.sponsor-info-below {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 15px;
+  width: 100%;
+  /* Slightly lift the text as well */
+  transform: translateZ(20px);
+}
+
+.sponsor-name-text {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.sponsor-click-text {
+  color: #a0c4e8;
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.6;
+  transition: opacity 0.3s, color 0.3s;
+}
+
+.sponsor-tilt-inner:hover .sponsor-click-text {
+  opacity: 1;
+  color: #c4d7ec;
+}
+
+.no-sponsors {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #a0c4e8;
+  margin-top: 50px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sponsors-content {
+    padding: 0 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sponsors-content {
+    padding: 0 15px;
+  }
+}

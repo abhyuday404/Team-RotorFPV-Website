@@ -7,6 +7,7 @@ import Achievements from './pages/Achievements';
 import Admin from './pages/Admin';
 import Gallery from './pages/Gallery';
 import Board from './pages/Board';
+import Sponsors from './pages/Sponsors';
 import Silk from './components/Silk';
 import MobileOverlay from './components/MobileOverlay';
 
@@ -30,6 +31,7 @@ function App() {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/board" element={<Board />} />
+          <Route path="/sponsors" element={<Sponsors />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
