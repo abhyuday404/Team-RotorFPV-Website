@@ -72,17 +72,19 @@ const Sponsors = () => {
   useEffect(() => {
     const q = query(
       collection(db, "sponsors"),
-      where("isActive", "==", true),
       orderBy("order", "asc")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setSponsors(
-        snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-      );
+      const allSponsors = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      // Filter active sponsors in memory to avoid requiring a Firestore composite index
+      setSponsors(allSponsors.filter(s => s.isActive === true));
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching sponsors:", error);
       setLoading(false);
     });
 
