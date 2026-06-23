@@ -87,20 +87,6 @@ export const generateContinuousTrack = (yearCircuits) => {
       });
       currentZ -= spacingZ;
       checkpointIndex++;
-
-      // Force a straight exit by adding an invisible or visible gate with the exact same X/Y
-      // We'll just add a straight filler gate after the achievement to ensure the spline stays dead straight!
-      checkpoints.push({
-        type: 'gate',
-        id: `gate-post-${yearIndex}-${checkpointIndex}`,
-        worldPosition: new THREE.Vector3(
-          startPos.x + achXOffset,
-          startPos.y + achYOffset,
-          currentZ
-        )
-      });
-      currentZ -= spacingZ;
-      checkpointIndex++;
     });
 
     // Pass through every checkpoint
