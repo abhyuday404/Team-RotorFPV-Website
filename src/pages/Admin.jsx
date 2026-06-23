@@ -27,14 +27,17 @@ const Admin = () => {
   
   // Team Space State
   const [teamYears, setTeamYears] = useState([]);
+  const [teamYearsData, setTeamYearsData] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [selectedTeamYear, setSelectedTeamYear] = useState('');
   const [newTeamYear, setNewTeamYear] = useState('');
   const [editingTeamMemberId, setEditingTeamMemberId] = useState(null);
   const teamMemberFileInputRef = useRef(null);
+  const seniorCoreFileInputRef = useRef(null);
   const [teamMemberFormData, setTeamMemberFormData] = useState({
     name: '',
     role: '',
+    jobTitle: '',
     image: '',
     linkedin: '',
     category: 'leaders',
@@ -178,10 +181,12 @@ const Admin = () => {
 
           const qTeamYears = query(collection(db, 'team_years'), orderBy('year', 'desc'));
           firestoreUnsubscribes.push(onSnapshot(qTeamYears, (snapshot) => {
-            const data = snapshot.docs.map(doc => doc.data().year);
-            setTeamYears(data);
-            if (data.length > 0) {
-              setSelectedTeamYear(prev => prev || data[0]);
+            const dataStrings = snapshot.docs.map(doc => doc.data().year);
+            const dataObjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setTeamYears(dataStrings);
+            setTeamYearsData(dataObjects);
+            if (dataStrings.length > 0) {
+              setSelectedTeamYear(prev => prev || dataStrings[0]);
             }
           }, (error) => {
             console.error("Error fetching team years:", error);
@@ -758,7 +763,7 @@ const Admin = () => {
   };
 
   const resetTeamMemberForm = () => {
-    setTeamMemberFormData({ name: '', role: '', image: '', linkedin: '', category: 'leaders', order: 0, isActive: true });
+    setTeamMemberFormData({ name: '', role: '', jobTitle: '', image: '', linkedin: '', category: 'leaders', order: 0, isActive: true });
     setEditingTeamMemberId(null);
   };
 
@@ -767,6 +772,7 @@ const Admin = () => {
     setTeamMemberFormData({
       name: item.name || '',
       role: item.role || '',
+      jobTitle: item.jobTitle || '',
       image: item.image || '',
       linkedin: item.linkedin || '',
       category: item.category || 'leaders',
@@ -798,6 +804,7 @@ const Admin = () => {
       year: selectedTeamYear,
       name: teamMemberFormData.name,
       role: teamMemberFormData.role,
+      jobTitle: teamMemberFormData.jobTitle,
       image: teamMemberFormData.image,
       linkedin: teamMemberFormData.linkedin,
       category: teamMemberFormData.category,
@@ -821,6 +828,65 @@ const Admin = () => {
     } catch (error) {
       console.error("Save Error:", error);
       alert("Failed to save team member.");
+    }
+  };
+
+  const handleSeniorCoreUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !selectedTeamYear) return;
+
+    setIsUploading(true);
+    const data = new FormData();
+    data.append("image", file);
+    data.append("folder", "board");
+
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/upload`, {
+        method: "POST",
+        headers: { 'Authorization': `Bearer ${idToken}` },
+        body: data,
+      });
+      const uploadedImage = await response.json();
+      if (response.ok && uploadedImage.secure_url) {
+        const yearDoc = teamYearsData.find(y => y.year === selectedTeamYear);
+        if (yearDoc && yearDoc.seniorCorePhoto) {
+          await deleteCloudinaryImage(yearDoc.seniorCorePhoto);
+        }
+        await setDoc(doc(db, 'team_years', selectedTeamYear), {
+          seniorCorePhoto: uploadedImage.secure_url,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        alert("Senior Core Photo uploaded successfully!");
+      } else {
+        alert(uploadedImage.error || "Upload failed.");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Error uploading image.");
+    } finally {
+      setIsUploading(false);
+      if (seniorCoreFileInputRef.current) seniorCoreFileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteSeniorCore = async () => {
+    if (!selectedTeamYear) return;
+    const yearDoc = teamYearsData.find(y => y.year === selectedTeamYear);
+    if (!yearDoc || !yearDoc.seniorCorePhoto) return;
+
+    if (window.confirm("Are you sure you want to delete the Senior Core photo for this year?")) {
+      try {
+        await deleteCloudinaryImage(yearDoc.seniorCorePhoto);
+        await updateDoc(doc(db, 'team_years', selectedTeamYear), {
+          seniorCorePhoto: null
+        });
+        alert("Senior Core Photo deleted.");
+      } catch (error) {
+        console.error("Delete Error:", error);
+        alert("Failed to delete photo.");
+      }
     }
   };
 
@@ -1548,8 +1614,36 @@ const Admin = () => {
               </div>
 
               {selectedTeamYear && (
-                <div className="admin-glass-panel form-panel">
-                  <h2>{editingTeamMemberId ? `Edit Member (${formatBoardYear(selectedTeamYear)})` : `Add Member (${formatBoardYear(selectedTeamYear)})`}</h2>
+                <>
+                  <div className="admin-glass-panel form-panel">
+                    <h2>Senior Core Photo ({formatBoardYear(selectedTeamYear)})</h2>
+                    {teamYearsData.find(y => y.year === selectedTeamYear)?.seniorCorePhoto ? (
+                      <div className="image-preview achievement">
+                        <img src={teamYearsData.find(y => y.year === selectedTeamYear).seniorCorePhoto} alt="Senior Core" />
+                        <div style={{ marginTop: '10px' }}>
+                          <button type="button" onClick={handleDeleteSeniorCore} className="admin-btn delete small">Delete Photo</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="empty-text">No Senior Core photo uploaded for this year.</p>
+                    )}
+                    <div className="form-group" style={{ marginTop: '20px' }}>
+                      <label>Upload New Photo</label>
+                      <div className="file-upload">
+                        <input
+                          type="file"
+                          accept="image/*,.heic,.heif"
+                          ref={seniorCoreFileInputRef}
+                          onChange={handleSeniorCoreUpload}
+                          disabled={isUploading}
+                        />
+                        {isUploading && <span className="upload-status">Uploading…</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="admin-glass-panel form-panel">
+                    <h2>{editingTeamMemberId ? `Edit Member (${formatBoardYear(selectedTeamYear)})` : `Add Member (${formatBoardYear(selectedTeamYear)})`}</h2>
                   <form onSubmit={handleTeamMemberSubmit} className="admin-form">
                     <div className="form-row">
                       <div className="form-group">
@@ -1600,6 +1694,17 @@ const Admin = () => {
                           required
                         />
                       </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Job Title (optional)</label>
+                      <input
+                        type="text"
+                        name="jobTitle"
+                        value={teamMemberFormData.jobTitle}
+                        onChange={handleTeamMemberInputChange}
+                        placeholder="e.g. Working at Honda"
+                      />
                     </div>
 
                     <div className="form-group">
@@ -1665,6 +1770,7 @@ const Admin = () => {
                     </div>
                   </form>
                 </div>
+                </>
               )}
             </div>
 

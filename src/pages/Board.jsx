@@ -37,9 +37,10 @@ const MemberCard = ({ member }) => {
             <div className="tilted-card-name-overlay">{member.name}</div>
           }
         />
-        <div className="member-info-below">
+        <div className={`member-info-below ${member.jobTitle ? 'has-job-title' : ''}`}>
           <h3 className="member-name-text">{member.name}</h3>
           <p className="member-role-text">{member.role}</p>
+          {member.jobTitle && <p className="member-job-title">{member.jobTitle}</p>}
           <a href={member.linkedin} className="member-linkedin" target="_blank" rel="noreferrer">
             <FaLinkedin size={24} />
           </a>
@@ -59,12 +60,15 @@ const formatBoardYear = (year) => {
 const Board = () => {
   const [teamData, setTeamData] = useState({});
   const [years, setYears] = useState([]);
+  const [teamYearsData, setTeamYearsData] = useState({});
   const [activeYear, setActiveYear] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showExBoardOverlay, setShowExBoardOverlay] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const pillRef = useRef(null);
   const isWheelScrollingRef = useRef(false);
+  const overscrollAmountRef = useRef(0);
 
   useEffect(() => {
     // We need to fetch team years and members
@@ -76,8 +80,15 @@ const Board = () => {
     // 1. Fetch years
     const qYears = query(collection(db, 'team_years'), orderBy('year', 'desc'));
     const unsubYears = onSnapshot(qYears, (snapshot) => {
-      const fetchedYears = snapshot.docs.map(doc => doc.data().year);
+      const fetchedYears = [];
+      const yearsDataMap = {};
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        fetchedYears.push(data.year);
+        yearsDataMap[data.year] = { id: doc.id, ...data };
+      });
       setYears(fetchedYears);
+      setTeamYearsData(yearsDataMap);
       if (fetchedYears.length > 0) {
          setActiveYear(prev => prev || fetchedYears[0]);
       }
@@ -166,6 +177,58 @@ const Board = () => {
     return () => pill.removeEventListener('wheel', handleWheel);
   }, [activeYear, years]);
 
+  useEffect(() => {
+    const handleWindowWheel = (e) => {
+      // Only trigger if not already animating/transitioning
+      if (!isWheelScrollingRef.current && !isAnimating && !showExBoardOverlay) {
+        if (e.deltaY > 0) {
+          // Check if at the bottom of the page
+          const scrollPosition = window.innerHeight + window.scrollY;
+          const threshold = document.body.offsetHeight - 50; // Give leeway
+          
+          if (scrollPosition >= threshold) {
+            overscrollAmountRef.current += e.deltaY;
+            
+            if (overscrollAmountRef.current > 300) {
+              const currentIndex = years.indexOf(activeYear);
+              if (currentIndex < years.length - 1) { // If there is a previous board
+                const nextYear = years[currentIndex + 1];
+                
+                isWheelScrollingRef.current = true;
+                setShowExBoardOverlay(true);
+                overscrollAmountRef.current = 0;
+                
+                // Change year immediately (which triggers its own 300ms fade)
+                changeYear(nextYear);
+                
+                // Smoothly scroll back to the top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                // Hide the overlay after 1 second
+                setTimeout(() => {
+                  setShowExBoardOverlay(false);
+                }, 1000);
+                
+                // Unlock scrolling
+                setTimeout(() => {
+                  isWheelScrollingRef.current = false;
+                }, 1200);
+              }
+            }
+          } else {
+            overscrollAmountRef.current = 0;
+          }
+        } else {
+          // Scrolling up resets the overscroll amount
+          overscrollAmountRef.current = 0;
+        }
+      }
+    };
+
+    window.addEventListener('wheel', handleWindowWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWindowWheel);
+  }, [activeYear, years, isAnimating, showExBoardOverlay]);
+
 
   if (error) {
     return (
@@ -221,6 +284,27 @@ const Board = () => {
               <MemberCard key={member.id} member={member} />
             ))}
           </div>
+
+          {teamYearsData[activeYear]?.seniorCorePhoto && (
+            <>
+              <h3 className="section-heading" style={{ marginTop: '40px' }}>Senior Core</h3>
+              <div className="senior-core-photo-container">
+                <TiltedCard
+                  imageSrc={teamYearsData[activeYear].seniorCorePhoto}
+                  altText="Senior Core"
+                  containerHeight="400px"
+                  containerWidth="100%"
+                  imageHeight="400px"
+                  imageWidth="100%"
+                  rotateAmplitude={5}
+                  scaleOnHover={1.02}
+                  showMobileWarning={false}
+                  showTooltip={false}
+                  displayOverlayContent={false}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -262,6 +346,12 @@ const Board = () => {
           </div>
         </GlassSurface>
       </div>
+
+      {showExBoardOverlay && (
+        <div className="ex-board-overlay">
+          <h2>EX BOARD</h2>
+        </div>
+      )}
     </div>
   );
 };
