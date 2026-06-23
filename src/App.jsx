@@ -9,6 +9,8 @@ import Admin from './pages/Admin';
 import Gallery from './pages/Gallery';
 import Board from './pages/Board';
 import SponsorUs from './pages/SponsorUs';
+import FormalAchievements from './pages/FormalAchievements';
+import ViewDropdown from './components/ViewDropdown';
 import Silk from './components/Silk';
 import MobileOverlay from './components/MobileOverlay';
 
@@ -29,11 +31,13 @@ function AppContent() {
         />
       </div>
       <Navbar />
+      <ViewDropdown />
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/achievements" element={<Achievements />} />
+          <Route path="/formal-achievements" element={<FormalAchievements />} />
           <Route path="/board" element={<Board />} />
           <Route path="/sponsor-us" element={<SponsorUs />} />
           <Route path="/contact" element={<Contact />} />

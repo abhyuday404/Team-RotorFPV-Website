@@ -1,0 +1,204 @@
+.formal-achievements-page {
+  min-height: 100vh;
+  padding: 150px 5% 100px;
+  position: relative;
+  z-index: 1;
+  color: #fff;
+}
+
+.formal-achievements-loading {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00ffff;
+  font-family: monospace;
+  font-size: 24px;
+}
+
+/* 3D Rotating Pill */
+.fa-pill-container {
+  position: fixed;
+  left: max(20px, calc(50% - 705px));
+  top: 30px;
+  width: 160px;
+  height: 70px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  pointer-events: auto; /* Allow hovering and scrolling */
+  z-index: 2000;
+}
+
+.fa-cylinder-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.fa-cylinder-item {
+  position: absolute;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  font-family: 'Inter', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  text-transform: none;
+  letter-spacing: 1px;
+}
+
+/* Achievements List */
+.formal-achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 120px;
+  align-items: center;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  margin-top: 50px;
+  font-family: 'Inter', sans-serif;
+}
+
+.formal-achievement-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 60px;
+  width: 100%;
+}
+
+.fa-col {
+  display: flex;
+}
+
+/* LEFT COLUMN: Title */
+.fa-title-col {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.fa-title-col h2 {
+  margin: 0;
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+  text-align: left;
+  max-width: 500px;
+}
+
+/* CENTER COLUMN: Visual Focus */
+.fa-visual-col {
+  width: 600px;
+  height: 360px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fa-image-wrapper {
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.fa-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fa-placeholder {
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fa-placeholder-inner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* RIGHT COLUMN: Description */
+.fa-desc-col {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.fa-desc-col p {
+  margin: 0;
+  font-size: 1.8rem;
+  line-height: 1.6;
+  color: #E5E7EB;
+  font-weight: 400;
+  text-align: right;
+  max-width: 500px;
+}
+
+.fa-no-data {
+  font-size: 1.5rem;
+  color: #E5E7EB;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 1200px) {
+  .formal-achievement-item {
+    gap: 40px;
+  }
+  .fa-title-col h2 { font-size: 2.8rem; max-width: 400px; }
+  .fa-desc-col p { font-size: 1.5rem; max-width: 400px; }
+  .fa-visual-col { width: 450px; height: 270px; }
+}
+
+@media screen and (max-width: 900px) {
+  .formal-achievement-item {
+    flex-direction: column;
+    gap: 30px;
+    margin-bottom: 40px;
+  }
+  
+  .fa-title-col { justify-content: center; }
+  .fa-title-col h2 { text-align: center; font-size: 2.5rem; max-width: 100%; }
+
+  .fa-desc-col { justify-content: center; }
+  .fa-desc-col p { text-align: center; font-size: 1.3rem; max-width: 100%; }
+
+  .fa-visual-col {
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+    aspect-ratio: 16/9;
+  }
+  
+  .fa-pill-container {
+    top: 160px; /* Below the view switcher on mobile */
+  }
+}

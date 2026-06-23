@@ -29,6 +29,26 @@ export const OSDOverlay = ({ progress, allIslandsData }) => {
 
   const selectedYear = activeIsland?.year || "---";
 
+  const hasSyncedRef = useRef(false);
+
+  // Initial sync from formal view
+  useEffect(() => {
+    if (!hasSyncedRef.current && availableYears && availableYears.length > 0 && allIslandsData && allIslandsData.length > 0) {
+      const sharedYear = sessionStorage.getItem('shared_year');
+      if (sharedYear) {
+        const islandIndex = allIslandsData.findIndex(i => i.year === sharedYear);
+        if (islandIndex !== -1 && activeIslandIndex !== islandIndex) {
+          hasSyncedRef.current = true;
+          resetProgress(allIslandsData[islandIndex].startProgress);
+        } else {
+          hasSyncedRef.current = true; // Synced successfully (already matching)
+        }
+      } else {
+        hasSyncedRef.current = true; // Nothing to sync
+      }
+    }
+  }, [availableYears, allIslandsData, activeIslandIndex]);
+
   // Wheel scrolling logic for the 3D Pill
   useEffect(() => {
     const pill = pillRef.current;
@@ -51,6 +71,8 @@ export const OSDOverlay = ({ progress, allIslandsData }) => {
       
       if (nextIndex !== currentIndex) {
         isWheelScrollingRef.current = true;
+        const targetYear = allIslandsData[nextIndex].year;
+        sessionStorage.setItem('shared_year', targetYear);
         // Jump progress to the start of the targeted year
         resetProgress(allIslandsData[nextIndex].startProgress);
         
@@ -126,7 +148,7 @@ export const OSDOverlay = ({ progress, allIslandsData }) => {
           
           .betaflight-osd {
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
+            top: 50vh; left: 0; width: 100vw; height: 50vh;
             pointer-events: none;
             z-index: 1000;
             color: #ffffff;
@@ -151,29 +173,31 @@ export const OSDOverlay = ({ progress, allIslandsData }) => {
 
           /* 3D Rotating Pill Timeline styles */
           .osd-pill-container {
-            position: absolute;
-            right: 4vw;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 100px;
-            height: 130px;
-            border-radius: 30px;
+            position: fixed;
+            left: max(20px, calc(50% - 705px));
+            top: 30px;
+            width: 160px;
+            height: 70px;
+            border-radius: 20px;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             pointer-events: auto; /* Allow hovering and scrolling */
+            z-index: 2000;
           }
           
           .osd-cylinder-container {
             position: relative;
             width: 100%;
             height: 100%;
-            perspective: 800px;
+            perspective: 600px;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+            border-radius: 20px;
           }
           
           .osd-cylinder-item {
@@ -181,14 +205,21 @@ export const OSDOverlay = ({ progress, allIslandsData }) => {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             transform-style: preserve-3d;
             font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 20px;
+            font-weight: 700;
             color: #ffffff;
             cursor: pointer;
             text-align: center;
             width: 100%;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
             text-transform: none;
+            letter-spacing: 1px;
+          }
+          
+          @media screen and (max-width: 1100px) {
+            .osd-pill-container {
+              top: 120px;
+            }
           }
         `}
       </style>
@@ -197,9 +228,7 @@ export const OSDOverlay = ({ progress, allIslandsData }) => {
         {/* TOP ROW */}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: '30px' }}>
-            <span><span style={{ color: batColor }}>{batteryVolts}</span> V</span>
-            <span>RSSI <span style={{ color: '#44FF44' }}>99</span></span>
-            <span>SATS 18</span>
+            {/* Moved to bottom right */}
           </div>
         </div>
 
@@ -223,7 +252,7 @@ export const OSDOverlay = ({ progress, allIslandsData }) => {
                     key={year}
                     className="osd-cylinder-item"
                     style={{
-                      transform: `rotateX(${-offset * 40}deg) translateZ(40px)`,
+                      transform: `rotateX(${-offset * 45}deg) translateZ(25px)`,
                       opacity: isVisible ? 1 - Math.abs(offset) * 0.5 : 0,
                       pointerEvents: isVisible ? 'auto' : 'none',
                       color: offset === 0 ? '#ffffff' : '#888888'
@@ -257,8 +286,9 @@ export const OSDOverlay = ({ progress, allIslandsData }) => {
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
-            <span>FLY <span style={{ color: '#44FF44' }}>{formatTime(time)}</span></span>
-            <span>ACH {achievementCount} : {totalCount}</span>
+            <span><span style={{ color: batColor }}>{batteryVolts}</span> V</span>
+            <span>RSSI <span style={{ color: '#44FF44' }}>99</span></span>
+            <span>SATS 18</span>
           </div>
         </div>
       </div>
