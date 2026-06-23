@@ -36,6 +36,10 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
+
+    match /contact_messages/{docId} {
+      allow read, write: if isAdmin();
+    }
     // Deny everything else by default.
     // Any new collection must have explicit rules added above.
     match /{document=**} {

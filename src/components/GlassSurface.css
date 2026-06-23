@@ -3,7 +3,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
   transition: opacity 0.26s ease-out;
   transform: translateZ(0);
   will-change: transform;

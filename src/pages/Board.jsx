@@ -195,24 +195,36 @@ const Board = () => {
                 const nextYear = years[currentIndex + 1];
                 
                 isWheelScrollingRef.current = true;
-                setShowExBoardOverlay(true);
                 overscrollAmountRef.current = 0;
                 
-                // Change year immediately (which triggers its own 300ms fade)
-                changeYear(nextYear);
-                
-                // Smoothly scroll back to the top
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                
-                // Hide the overlay after 1 second
-                setTimeout(() => {
-                  setShowExBoardOverlay(false);
-                }, 1000);
-                
-                // Unlock scrolling
-                setTimeout(() => {
-                  isWheelScrollingRef.current = false;
-                }, 1200);
+                if (currentIndex === 0) {
+                  setShowExBoardOverlay(true);
+                  
+                  // Change year immediately (which triggers its own 300ms fade)
+                  changeYear(nextYear);
+                  
+                  // Smoothly scroll back to the top
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  
+                  // Hide the overlay after 1 second
+                  setTimeout(() => {
+                    setShowExBoardOverlay(false);
+                  }, 1000);
+                  
+                  // Unlock scrolling
+                  setTimeout(() => {
+                    isWheelScrollingRef.current = false;
+                  }, 1200);
+                } else {
+                  // For older years, just change year without the overlay delay
+                  changeYear(nextYear);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  
+                  // Unlock scrolling after regular animation
+                  setTimeout(() => {
+                    isWheelScrollingRef.current = false;
+                  }, 800);
+                }
               }
             }
           } else {

@@ -16,7 +16,7 @@ import MobileOverlay from './components/MobileOverlay';
 
 function AppContent() {
   const location = useLocation();
-  const isAchievementsPage = location.pathname === '/achievements';
+  const isInteractiveAchievementsPage = location.pathname === '/interactive-achievements';
 
   return (
     <>
@@ -36,15 +36,15 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/gallery" element={<Gallery />} />
-          <Route path="/achievements" element={<Achievements />} />
-          <Route path="/formal-achievements" element={<FormalAchievements />} />
+          <Route path="/achievements" element={<FormalAchievements />} />
+          <Route path="/interactive-achievements" element={<Achievements />} />
           <Route path="/board" element={<Board />} />
           <Route path="/sponsor-us" element={<SponsorUs />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
-      {!isAchievementsPage && <Footer />}
+      {!isInteractiveAchievementsPage && <Footer />}
     </>
   );
 }
