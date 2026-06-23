@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase';
+import ContactMessagesAdmin from '../components/ContactMessagesAdmin';
 import './Admin.css';
 
 const formatBoardYear = (year) => {
@@ -1264,6 +1265,12 @@ const Admin = () => {
         >
           Sponsors
         </button>
+        <button
+          className={`admin-tab ${activeTab === 'contact_messages' ? 'active' : ''}`}
+          onClick={() => setActiveTab('contact_messages')}
+        >
+          Contact Messages
+        </button>
         {(user?.isSuperAdmin) && (
           <button
             className={`admin-tab ${activeTab === 'admins' ? 'active' : ''}`}
@@ -2065,6 +2072,10 @@ const Admin = () => {
               </div>
             </div>
           </>
+        )}
+        
+        {activeTab === 'contact_messages' && (
+          <ContactMessagesAdmin />
         )}
       </div>
     </div>

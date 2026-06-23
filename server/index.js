@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
+import { Resend } from 'resend';
+import rateLimit from 'express-rate-limit';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -394,6 +396,110 @@ app.post('/api/delete-asset', verifyAdmin, async (req, res) => {
   } catch (error) {
     console.error('[Cloudinary Delete] Error:', error);
     res.status(500).json({ error: error.message || 'Delete failed' });
+  }
+});
+
+// ── Contact Us Endpoint ──
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 contact requests per window
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+app.post('/api/contact', contactLimiter, async (req, res) => {
+  try {
+    const { name, email, phone, organization, queryType, message, honeypot } = req.body;
+
+    // Basic anti-spam honeypot field check
+    if (honeypot) {
+      // Spam detected, silently reject but return success to fool bots
+      return res.status(200).json({ success: true, message: 'Message sent successfully.' });
+    }
+
+    // Required fields validation
+    if (!name || !email || !message || !queryType) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, error: 'Invalid email format' });
+    }
+
+    // Message length limit
+    if (message.length > 2000) {
+      return res.status(400).json({ success: false, error: 'Message is too long (max 2000 characters)' });
+    }
+
+    const contactDoc = {
+      name,
+      email,
+      phone: phone || '',
+      organization: organization || '',
+      queryType,
+      message,
+      createdAt: new Date(),
+      status: 'unread',
+      ipAddress: req.ip || req.connection?.remoteAddress || '',
+      repliedAt: null
+    };
+
+    // Save to Firestore
+    const docRef = await db.collection('contact_messages').add(contactDoc);
+
+    // Format Email
+    const submissionDate = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'long', timeStyle: 'short' });
+    const emailBody = `Name: ${name}
+Email: ${email}
+Phone: ${phone || 'N/A'}
+Organization: ${organization || 'N/A'}
+Query Type: ${queryType}
+
+Message:
+${message}
+
+Submitted on:
+${submissionDate} IST`;
+
+    // Send Email via Resend
+    if (process.env.RESEND_API_KEY) {
+      // 1. Send to personal verified email (Will succeed immediately)
+      const { data, error } = await resend.emails.send({
+        from: 'Team RotorFPV <contact@teamrotorfpv.com>',
+        to: 'sarthakkhubchandanik@gmail.com', 
+        subject: '[Team RotorFPV Website] New Contact Form Submission',
+        text: emailBody
+      });
+      
+      if (error) {
+        console.error("Resend API Error (Personal):", error);
+        return res.status(500).json({ success: false, error: 'Failed to send email notification: ' + error.message });
+      }
+
+      // 2. Send to Official Email
+      const officialResponse = await resend.emails.send({
+        from: 'Team RotorFPV <contact@teamrotorfpv.com>',
+        to: 'teamrotorfpv@vit.ac.in',
+        subject: '[Team RotorFPV Website] New Contact Form Submission',
+        text: emailBody
+      });
+      
+      if (officialResponse.error) {
+        console.warn("Resend API Error (Official Email):", officialResponse.error.message, "- This is expected until your domain is verified.");
+      }
+
+      console.log("Email processing complete.");
+    } else {
+      console.warn("RESEND_API_KEY is not set in environment variables. Email notification was not sent.");
+    }
+
+    res.status(200).json({ success: true, message: 'Message sent successfully.' });
+  } catch (error) {
+    console.error('Error handling contact form:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

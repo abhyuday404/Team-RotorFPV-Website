@@ -7,15 +7,15 @@ const ViewDropdown = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isInteractive = location.pathname === '/achievements';
-  const isFormal = location.pathname === '/formal-achievements';
+  const isInteractive = location.pathname === '/interactive-achievements';
+  const isFormal = location.pathname === '/achievements';
 
   const views = [
-    { label: 'INTERACTIVE', path: '/achievements' },
-    { label: 'FORMAL', path: '/formal-achievements' }
+    { label: 'FORMAL', path: '/achievements' },
+    { label: 'INTERACTIVE', path: '/interactive-achievements' }
   ];
 
-  const activeIndex = isInteractive ? 0 : 1;
+  const activeIndex = isFormal ? 0 : 1;
 
   useEffect(() => {
     const pill = pillRef.current;
