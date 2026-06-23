@@ -8,7 +8,7 @@ import { getGlobalProgress } from '../utils/progress';
 // at the instant the drone passes through the last loop before an achievement,
 // the camera is aimed exactly at that achievement (perfectly centered). It also
 // makes the camera yaw/bank toward the next loop like a real drone chasing gates.
-const LOOK_AHEAD_DISTANCE = 250;
+export const LOOK_AHEAD_DISTANCE = 250;
 
 export const FPVCamera = ({ spline }) => {
   const targetLookAt = useRef(new THREE.Vector3());
